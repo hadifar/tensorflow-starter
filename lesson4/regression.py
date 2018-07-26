@@ -20,6 +20,7 @@ import numpy as np
 
 (train_x, train_y), (test_x, test_y) = keras.datasets.boston_housing.load_data()
 
-order = np.argsort(np.random.random(train_y.shape))
+t = np.random.random(train_y.shape)
+order = np.argsort(t)
 train_data = train_x[order]
 train_labels = train_y[order]
