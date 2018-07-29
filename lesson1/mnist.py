@@ -23,9 +23,13 @@ mnist = tf.keras.datasets.mnist
 # normalize data [images are gray-scale 64*64 pixels]
 x_train, x_test = x_train / 255.0, x_test / 255.0
 
+# flatten images similar to keras.layers.flatten
+x_train = x_train.reshape(x_train.shape[0], -1)
+x_test = x_test.reshape(x_test.shape[0], -1)
+
 model = tf.keras.models.Sequential([
-    # convert 64*64 into 4096
-    tf.keras.layers.Flatten(),
+    # convert 28*28 into 784
+    # tf.keras.layers.Flatten(),
     # MLP layer with 512 neuron
     tf.keras.layers.Dense(512, activation=tf.nn.relu),
     # some drop out for avoid over-fitting
