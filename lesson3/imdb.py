@@ -48,7 +48,7 @@ val_label = train_labels[:10000]
 train_data = train_data[10000:]
 train_labels = train_labels[10000:]
 
-print(train_data[0])
+
 model = tf.keras.Sequential()
 model.add(tf.keras.layers.Embedding(10000, 16))
 model.add(tf.keras.layers.GlobalAveragePooling1D())
