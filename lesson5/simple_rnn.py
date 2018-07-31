@@ -34,6 +34,7 @@ print('build model')
 model = keras.Sequential()
 model.add(keras.layers.Embedding(10000, 16))
 model.add(keras.layers.SimpleRNN(50))
+# model.add(keras.layers.LSTM(50))
 model.add(keras.layers.Dense(16, activation=tf.nn.relu))
 model.add(keras.layers.Dense(1, activation=tf.nn.sigmoid))
 
