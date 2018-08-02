@@ -24,6 +24,8 @@ print('preprocessing...')
 x_train = keras.preprocessing.sequence.pad_sequences(x_train, maxlen=256)
 x_test = keras.preprocessing.sequence.pad_sequences(x_test, maxlen=256)
 
+print(x_train[0])
+
 x_val = x_train[:10000]
 y_val = y_train[:10000]
 
