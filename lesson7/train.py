@@ -58,8 +58,7 @@ def main(_):
 
             # define training procedure
             global_step = tf.Variable(0, trainable=False, name='global_step')
-            optimizer = tf.train.AdamOptimizer(
-                learning_rate=FLAGS.learning_rate)
+            optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
             # clipping gradients
             tvars = tf.trainable_variables()
             grads, _ = tf.clip_by_global_norm(

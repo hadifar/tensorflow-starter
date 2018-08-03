@@ -47,6 +47,9 @@ class CharRNN(object):
         self.use_embedding = use_embedding
         self.embedding_size = embedding_size
 
+        self.inputs = None
+        self.targets = None
+        self.keep_prob = None
         self.build_inputs()
         self.build_lstm()
 
