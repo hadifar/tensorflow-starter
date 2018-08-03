@@ -14,44 +14,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import numpy as np
 import tensorflow as tf
-from tensorflow.examples.tutorials.mnist import input_data
+from tensorflow import keras
 
-mnist = input_data.read_data_sets("../lesson1/data/", one_hot=True)
+from lesson1.data_helper import DataHelper
 
-if __name__ == '__main__':
-    X = tf.placeholder(tf.float32, [None, 784], name="X")
-    Y_truth = tf.placeholder(tf.float32, [None, 10], name="Y")
+mnist = tf.keras.datasets.mnist
 
-    W = tf.Variable(tf.zeros([784, 10]), name='weights')
-    b = tf.Variable(tf.zeros([10]), name='bias')
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0
+m_train = x_train.shape[0]
+m_test = x_test.shape[0]
 
-    init = tf.initialize_all_variables()
+x_train = np.reshape(x_train, [m_train, -1])
+x_test = np.reshape(x_test, [m_test, -1])
 
-    # re_X = tf.reshape(X, [-1, 784])
-    Y_pred = tf.nn.softmax(tf.matmul(X, W) + b)
+y_train = keras.utils.to_categorical(y_train)
+y_test = keras.utils.to_categorical(y_test)
 
-    cross_entropy = -tf.reduce_sum(Y_truth * tf.log(Y_pred))
-    is_correct = tf.equal(tf.argmax(Y_pred, 1), tf.argmax(Y_truth, 1))
-    accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float32))
+data_helper = DataHelper(data=x_train, label=y_train)
 
-    optimizer = tf.train.GradientDescentOptimizer(0.004)
-    train_step = optimizer.minimize(cross_entropy)
+X = tf.placeholder(tf.float32, [None, 784], name="X")
+Y_truth = tf.placeholder(tf.float32, [None, 10], name="Y")
+W = tf.Variable(tf.zeros([784, 10]), name='weights')
+b = tf.Variable(tf.zeros([10]), name='bias')
+init = tf.initialize_all_variables()
 
-    sess = tf.Session()
-    sess.run(init)
+Y_pred = tf.nn.softmax(tf.matmul(X, W) + b)
+cross_entropy = -tf.reduce_sum(Y_truth * tf.log(Y_pred))
 
-    for i in range(10000):
-        batch_X, batch_Y = mnist.train.next_batch(100)
-        train_data = {X: batch_X, Y_truth: batch_Y}
-        sess.run(train_step, feed_dict=train_data)
+is_correct = tf.equal(tf.argmax(Y_pred, 1), tf.argmax(Y_truth, 1))
 
-        acc_train, loss_train = sess.run([accuracy, cross_entropy], feed_dict=train_data)
+accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float32))
 
-        test_data = {X: mnist.test.images, Y_truth: mnist.test.labels}
-        acc_test, loss_test = sess.run([accuracy, cross_entropy], feed_dict=test_data)
+optimizer = tf.train.GradientDescentOptimizer(0.004)
 
-        if i % 300 == 0:
-            print("training::: accuracy", acc_train, "loss", loss_train)
-            print("testing::: accuracy", acc_test, "loss", loss_test)
-            print(50 * '-')
+train_step = optimizer.minimize(cross_entropy)
+
+sess = tf.Session()
+sess.run(init)
+for i in range(10000):
+    batch_X, batch_Y = data_helper.next_batch(100)
+
+    train_data = {X: batch_X, Y_truth: batch_Y}
+    sess.run(train_step, feed_dict=train_data)
+
+    acc_train, loss_train = sess.run([accuracy, cross_entropy], feed_dict=train_data)
+    test_data = {X: x_test, Y_truth: y_test}
+    acc_test, loss_test = sess.run([accuracy, cross_entropy], feed_dict=test_data)
+
+    if i % 300 == 0:
+        print(i)
+        print("training::: accuracy", acc_train, "loss", loss_train)
+        print("testing::: accuracy", acc_test, "loss", loss_test)
+        print(50 * '-')
