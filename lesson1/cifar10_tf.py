@@ -40,16 +40,17 @@ K = 6
 L = 12
 M = 18
 
+# convolution network
 W1 = tf.Variable(tf.truncated_normal([5, 5, 3, K], stddev=0.1))
 B1 = tf.Variable(tf.ones([K]) / 10)
 W2 = tf.Variable(tf.truncated_normal([4, 4, K, L], stddev=0.1))
 B2 = tf.Variable(tf.ones([L]) / 10)
 W3 = tf.Variable(tf.truncated_normal([3, 3, L, M], stddev=0.1))
 B3 = tf.Variable(tf.ones([M]) / 10)
-
-W4 = tf.Variable(tf.truncated_normal([18 * 8 * 8, 200], stddev=0.1))
-B4 = tf.Variable(tf.ones([200]) / 10)
-W5 = tf.Variable(tf.truncated_normal([200, 10], stddev=0.1))
+# flatten convolution
+W4 = tf.Variable(tf.truncated_normal([M * 8 * 8, 128], stddev=0.1))
+B4 = tf.Variable(tf.ones([128]) / 10)
+W5 = tf.Variable(tf.truncated_normal([128, 10], stddev=0.1))
 B5 = tf.Variable(tf.ones([10]) / 10)
 
 Y1 = tf.nn.relu(tf.nn.conv2d(X, W1, strides=[1, 1, 1, 1], padding='SAME') + B1)
@@ -67,7 +68,7 @@ cross_entropy = tf.reduce_mean(cross_entropy)
 is_correct = tf.equal(tf.argmax(Y_pred, 1), tf.argmax(Y, 1))
 accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float32))
 
-train_step = tf.train.GradientDescentOptimizer(0.004).minimize(cross_entropy)
+train_step = tf.train.AdamOptimizer(0.005).minimize(cross_entropy)
 
 init = tf.global_variables_initializer()
 sess = tf.Session()
@@ -80,7 +81,7 @@ for i in range(25000):
     sess.run(train_step, feed_dict=train_data)
 
     acc_train, loss_train = sess.run([accuracy, cross_entropy], feed_dict=train_data)
-    test_data = {X: x_test[:1000], Y: y_test[:1000], pKeep: 1.0}
+    test_data = {X: x_test, Y: y_test, pKeep: 1.0}
     acc_test, loss_test = sess.run([accuracy, cross_entropy], feed_dict=test_data)
 
     if i % 100 == 0:

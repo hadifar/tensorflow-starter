@@ -16,7 +16,6 @@
 # ==============================================================================
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
 
 from lesson1.data_helper import DataHelper
 
@@ -29,9 +28,6 @@ m_test = x_test.shape[0]
 
 x_train = np.reshape(x_train, [m_train, -1])
 x_test = np.reshape(x_test, [m_test, -1])
-
-y_train = keras.utils.to_categorical(y_train)
-y_test = keras.utils.to_categorical(y_test)
 
 data_helper = DataHelper(data=x_train, label=y_train)
 
@@ -53,14 +49,14 @@ Y2 = tf.nn.dropout(Y2, PKeep)
 Y_logit = tf.matmul(Y2, W3) + B3
 Y_pred = tf.nn.softmax(tf.matmul(Y2, W3) + B3)
 
-cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=Y_logit, labels=Y_truth)
+cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=Y_logit, labels=Y_truth)
 cross_entropy = tf.reduce_mean(cross_entropy)
 
 is_correct = tf.equal(tf.argmax(Y_pred, 1), tf.argmax(Y_truth, 1))
 
 accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float32))
 
-train_step = tf.train.AdadeltaOptimizer(0.003).minimize(cross_entropy)
+train_step = tf.train.GradientDescentOptimizer(0.003).minimize(cross_entropy)
 
 init = tf.global_variables_initializer()
 sess = tf.Session()
