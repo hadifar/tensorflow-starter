@@ -37,34 +37,46 @@ data_helper = DataHelper(data=x_train, label=y_train)
 
 X = tf.placeholder(tf.float32, [None, 784], name="X")
 Y_truth = tf.placeholder(tf.float32, [None, 10], name="Y")
-W = tf.Variable(tf.zeros([784, 10]), name='weights')
-b = tf.Variable(tf.zeros([10]), name='bias')
-init = tf.initialize_all_variables()
+PKeep = tf.placeholder(tf.float32)
 
-Y_pred = tf.nn.softmax(tf.matmul(X, W) + b)
-cross_entropy = -tf.reduce_sum(Y_truth * tf.log(Y_pred))
+W1 = tf.Variable(tf.truncated_normal([784, 512], stddev=0.1), name='W1')
+B1 = tf.Variable(tf.ones([512]) / 10, name='B1')
+W2 = tf.Variable(tf.truncated_normal([512, 128], stddev=0.1), name='W2')
+B2 = tf.Variable(tf.ones([128]) / 10, name='B2')
+W3 = tf.Variable(tf.truncated_normal([128, 10], stddev=0.1), name='W3')
+B3 = tf.Variable(tf.ones([10]) / 10, name='B3')
+
+Y1 = tf.nn.relu(tf.matmul(X, W1) + B1)
+Y1 = tf.nn.dropout(Y1, PKeep)
+Y2 = tf.nn.relu(tf.matmul(Y1, W2) + B2)
+Y2 = tf.nn.dropout(Y2, PKeep)
+Y_logit = tf.matmul(Y2, W3) + B3
+Y_pred = tf.nn.softmax(tf.matmul(Y2, W3) + B3)
+
+cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=Y_logit, labels=Y_truth)
+cross_entropy = tf.reduce_mean(cross_entropy) * 100
 
 is_correct = tf.equal(tf.argmax(Y_pred, 1), tf.argmax(Y_truth, 1))
 
 accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float32))
 
-optimizer = tf.train.GradientDescentOptimizer(0.004)
+train_step = tf.train.AdamOptimizer(0.003).minimize(cross_entropy)
 
-train_step = optimizer.minimize(cross_entropy)
-
+init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
-for i in range(10000):
+
+for i in range(16000):
     batch_X, batch_Y = data_helper.next_batch(100)
 
-    train_data = {X: batch_X, Y_truth: batch_Y}
+    train_data = {X: batch_X, Y_truth: batch_Y, PKeep: 0.75}
     sess.run(train_step, feed_dict=train_data)
 
     acc_train, loss_train = sess.run([accuracy, cross_entropy], feed_dict=train_data)
-    test_data = {X: x_test, Y_truth: y_test}
+    test_data = {X: x_test, Y_truth: y_test, PKeep: 1.0}
     acc_test, loss_test = sess.run([accuracy, cross_entropy], feed_dict=test_data)
 
-    if i % 300 == 0:
+    if i % 100 == 0:
         print(i)
         print("training::: accuracy", acc_train, "loss", loss_train)
         print("testing::: accuracy", acc_test, "loss", loss_test)
