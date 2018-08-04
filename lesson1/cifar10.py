@@ -66,6 +66,7 @@ if __name__ == '__main__':
 
     print(model.evaluate(x_test, y_test))
 
+    # visualize layers
     # successive_outputs = [layer.output for layer in model.layers[1:]]
     # visualization_model = Model(img_input, successive_outputs)
     #
@@ -107,5 +108,5 @@ if __name__ == '__main__':
     #         plt.title(layer_name)
     #         plt.grid(False)
     #         plt.imshow(display_grid, aspect='auto', cmap='viridis')
-
+    #
     # plt.show()

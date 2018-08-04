@@ -54,19 +54,19 @@ Y_logit = tf.matmul(Y2, W3) + B3
 Y_pred = tf.nn.softmax(tf.matmul(Y2, W3) + B3)
 
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=Y_logit, labels=Y_truth)
-cross_entropy = tf.reduce_mean(cross_entropy) * 100
+cross_entropy = tf.reduce_mean(cross_entropy)
 
 is_correct = tf.equal(tf.argmax(Y_pred, 1), tf.argmax(Y_truth, 1))
 
 accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float32))
 
-train_step = tf.train.AdamOptimizer(0.003).minimize(cross_entropy)
+train_step = tf.train.AdadeltaOptimizer(0.003).minimize(cross_entropy)
 
 init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
 
-for i in range(16000):
+for i in range(25000):
     batch_X, batch_Y = data_helper.next_batch(100)
 
     train_data = {X: batch_X, Y_truth: batch_Y, PKeep: 0.75}
