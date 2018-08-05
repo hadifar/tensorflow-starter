@@ -56,7 +56,7 @@ is_correct = tf.equal(tf.argmax(Y_pred, 1), tf.argmax(Y_truth, 1))
 
 accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float32))
 
-train_step = tf.train.GradientDescentOptimizer(0.003).minimize(cross_entropy)
+optimizer = tf.train.GradientDescentOptimizer(0.003).minimize(cross_entropy)
 
 init = tf.global_variables_initializer()
 sess = tf.Session()
@@ -66,8 +66,7 @@ for i in range(25000):
     batch_X, batch_Y = data_helper.next_batch(100)
 
     train_data = {X: batch_X, Y_truth: batch_Y, PKeep: 0.75}
-    sess.run(train_step, feed_dict=train_data)
-
+    sess.run(optimizer, feed_dict=train_data)
     acc_train, loss_train = sess.run([accuracy, cross_entropy], feed_dict=train_data)
     test_data = {X: x_test, Y_truth: y_test, PKeep: 1.0}
     acc_test, loss_test = sess.run([accuracy, cross_entropy], feed_dict=test_data)

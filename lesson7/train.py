@@ -11,17 +11,17 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_string('name', 'default', 'the name of the model')
 tf.flags.DEFINE_integer('num_seqs', 32, 'number of seqs in batch')
-tf.flags.DEFINE_integer('num_steps', 50, 'length of one seq')
+tf.flags.DEFINE_integer('num_steps', 20, 'length of one seq')
 tf.flags.DEFINE_integer('lstm_size', 128, 'size of hidden layer')
 tf.flags.DEFINE_integer('num_layers', 2, 'number of lstm layers')
 tf.flags.DEFINE_boolean('use_embedding', False, 'if use embedding')
 tf.flags.DEFINE_integer('embedding_size', 128, 'size of embedding')
-tf.flags.DEFINE_float('learning_rate', 0.01, 'learning_rate')
-tf.flags.DEFINE_float('train_keep_prob', 0.5,
+tf.flags.DEFINE_float('learning_rate', 0.005, 'learning_rate')
+tf.flags.DEFINE_float('train_keep_prob', 0.75,
                       'dropout rate during training process')
-tf.flags.DEFINE_string('input_file', '../lesson7/data/test.txt', 'utf-8 encoded input file')
+tf.flags.DEFINE_string('input_file', '../lesson7/data/all_poem.txt', 'utf-8 encoded input file')
 tf.flags.DEFINE_integer('max_steps', 20000, 'max steps of training')
-tf.flags.DEFINE_integer('save_model_every', 200,
+tf.flags.DEFINE_integer('save_model_every', 1000,
                         'save the model every 1000 steps')
 tf.flags.DEFINE_integer('log_every', 10, 'log the summaries every 10 steps')
 tf.flags.DEFINE_integer('max_vocab', 3500, 'the maximum of char number')
@@ -36,12 +36,13 @@ def main(_):
     with codecs.open(FLAGS.input_file, encoding='utf-8') as f:
         text = f.read()
 
+    print('read file')
     Reader = TextReader(text, FLAGS.max_vocab)
     Reader.save_to_file(os.path.join(FLAGS.name, 'converter.pkl'))
 
     arr = Reader.text_to_arr(text)
     g = batch_generator(arr, FLAGS.num_seqs, FLAGS.num_steps)
-
+    print('build model')
     with tf.Graph().as_default():
         sess = tf.Session()
         with sess.as_default():
@@ -59,6 +60,7 @@ def main(_):
             # define training procedure
             global_step = tf.Variable(0, trainable=False, name='global_step')
             optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+            # optimizer = tf.contrib.opt.NadamOptimizer(learning_rate=FLAGS.learning_rate)
             # clipping gradients
             tvars = tf.trainable_variables()
             grads, _ = tf.clip_by_global_norm(

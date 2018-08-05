@@ -109,6 +109,6 @@ class CharRNN(object):
         with tf.name_scope('loss'):
             y_one_hot = tf.one_hot(self.targets, self.num_classes)
             y_reshaped = tf.reshape(y_one_hot, shape=self.logits.get_shape())
-            loss = tf.nn.softmax_cross_entropy_with_logits(
+            loss = tf.nn.softmax_cross_entropy_with_logits_v2(
                 logits=self.logits, labels=y_reshaped)
             self.loss = tf.reduce_mean(loss)
