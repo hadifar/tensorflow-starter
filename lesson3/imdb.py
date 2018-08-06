@@ -15,6 +15,7 @@
 # limitations under the License.
 # ==============================================================================
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 imdb = tf.keras.datasets.imdb
 
@@ -72,7 +73,7 @@ print(eval)
 history_dict = history.history
 history_dict.keys()
 
-import matplotlib.pyplot as plt
+
 
 acc = history.history['acc']
 val_acc = history.history['val_acc']

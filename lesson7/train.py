@@ -41,7 +41,7 @@ def main(_):
     Reader.save_to_file(os.path.join(FLAGS.name, 'converter.pkl'))
 
     arr = Reader.text_to_arr(text)
-    g = batch_generator(arr, FLAGS.num_seqs, FLAGS.num_seq)
+    batch_gen = batch_generator(arr, FLAGS.num_seqs, FLAGS.num_seq)
     print('build model')
     with tf.Graph().as_default():
         sess = tf.Session()
@@ -63,9 +63,11 @@ def main(_):
             # optimizer = tf.contrib.opt.NadamOptimizer(learning_rate=FLAGS.learning_rate)
             # clipping gradients
             tvars = tf.trainable_variables()
+
             grads, _ = tf.clip_by_global_norm(
                 tf.gradients(ys=char_rnn.loss, xs=tvars),
                 clip_norm=char_rnn.grad_clip)
+
             train_op = optimizer.apply_gradients(
                 grads_and_vars=zip(grads, tvars), global_step=global_step)
 
@@ -79,7 +81,7 @@ def main(_):
 
             new_state = sess.run(char_rnn.initial_state)
 
-            for x, y in g:
+            for x, y in batch_gen:
                 start = time.time()
                 feed_dict = {
                     char_rnn.inputs: x,

@@ -34,6 +34,10 @@ class DataHelper:
     def label(self):
         return self._label
 
+    @property
+    def epoch_completed(self):
+        return self._epochs_completed
+
     def next_batch(self, batch_size):
         start = self._index_in_epoch
         if start == 0 and self._epochs_completed == 0:

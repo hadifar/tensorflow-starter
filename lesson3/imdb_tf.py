@@ -102,5 +102,12 @@ with tf.Session() as sess:
                   "{:.5f}".format(acc))
         step += 1
     print("Optimization Finished!")
-
-    print("Testing Accuracy:", sess.run(accuracy, feed_dict={x: test_data, y: test_labels}))
+    test_helper = DataHelper(test_data, test_labels)
+    step = 0
+    acc = 0
+    while test_helper.epoch_completed == 0:
+        step = step + 1
+        x_batch, y_batch = test_helper.next_batch(batch_size)
+        acc = acc + sess.run(accuracy, feed_dict={x: x_batch, y: y_batch})
+        print("Testing Accuracy on step ", step, ' is: ', accuracy)
+    print('final accuracy', acc / step)
