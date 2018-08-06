@@ -6,7 +6,7 @@ import tensorflow as tf
 from lesson9 import reader
 
 batch_size = 30
-num_steps = 20
+seq_num = 20
 hidden_size = 200
 vocab_size = 10000
 keep_prob = 1.0
@@ -28,24 +28,26 @@ class PTBModel(object):
         # Setting parameters for ease of use #
         ######################################
         self.batch_size = batch_size
-        self.num_steps = num_steps
+        self.seq_num = seq_num
         size = hidden_size
         self.vocab_size = vocab_size
 
         ###############################################################################
         # Creating placeholders for our input data and expected outputs (target data) #
         ###############################################################################
-        self._input_data = tf.placeholder(tf.int32, [batch_size, num_steps])  # [30#20]
-        self._targets = tf.placeholder(tf.int32, [batch_size, num_steps])  # [30#20]
+        self._input_data = tf.placeholder(tf.int32, [batch_size, seq_num])  # [30#20]
+        self._targets = tf.placeholder(tf.int32, [batch_size, seq_num])  # [30#20]
 
         ##########################################################################
         # Creating the LSTM cell structure and connect it with the RNN structure #
         ##########################################################################
         # Create the LSTM unit. 
         # This creates only the structure for the LSTM and has to be associated with a RNN unit still.
-        # The argument n_hidden(size=200) of BasicLSTMCell is size of hidden layer, that is, the number of hidden units of the LSTM (inside A).
+        # The argument n_hidden(size=200) of BasicLSTMCell is size of hidden layer,
+        # that is, the number of hidden units of the LSTM (inside A).
         # Size is the same as the size of our hidden layer, and no bias is added to the Forget Gate. 
-        # LSTM cell processes one word at a time and computes probabilities of the possible continuations of the sentence.
+        # LSTM cell processes one word at a time and
+        # computes probabilities of the possible continuations of the sentence.
         lstm_cell = tf.contrib.rnn.BasicLSTMCell(size, forget_bias=0.0)
 
         # Unless you changed keep_prob, this won't actually execute -- this is a dropout wrapper for our LSTM unit
@@ -53,12 +55,15 @@ class PTBModel(object):
         if is_training and keep_prob < 1:
             lstm_cell = tf.contrib.rnn.DropoutWrapper(lstm_cell, output_keep_prob=keep_prob)
 
-        # By taking in the LSTM cells as parameters, the MultiRNNCell function junctions the LSTM units to the RNN units.
+        # By taking in the LSTM cells as parameters,
+        # the MultiRNNCell function junctions the LSTM units to the RNN units.
         # RNN cell composed sequentially of multiple simple cells.
         stacked_lstm = tf.contrib.rnn.MultiRNNCell([lstm_cell] * num_layers)
 
         # Define the initial state, i.e., the model state for the very first data point
-        # It initialize the state of the LSTM memory. The memory state of the network is initialized with a vector of zeros and gets updated after reading each word.
+        # It initialize the state of the LSTM memory.
+        # The memory state of the network is initialized with a vector of zeros and
+        # gets updated after reading each word.
         self._initial_state = stacked_lstm.zero_state(batch_size, tf.float32)
 
         ####################################################################
@@ -79,15 +84,18 @@ class PTBModel(object):
         # Creating the input structure for our RNN #
         ############################################
         # Input structure is 20x[30x200]
-        # Considering each word is represended by a 200 dimentional vector, and we have 30 batchs, we create 30 word-vectors of size [30xx2000]
-        # inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, num_steps, inputs)]
+        # Considering each word is represended by a 200 dimentional vector,
+        # and we have 30 batchs, we create 30 word-vectors of size [30xx2000]
+        # inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, num_seq, inputs)]
         # The input structure is fed from the embeddings, which are filled in by the input data
         # Feeding a batch of b sentences to a RNN:
         # In step 1,  first word of each of the b sentences (in a batch) is input in parallel.  
         # In step 2,  second word of each of the b sentences is input in parallel. 
         # The parallelism is only for efficiency.  
-        # Each sentence in a batch is handled in parallel, but the network sees one word of a sentence at a time and does the computations accordingly. 
-        # All the computations involving the words of all sentences in a batch at a given time step are done in parallel. 
+        # Each sentence in a batch is handled in parallel,
+        # but the network sees one word of a sentence at a time and does the computations accordingly.
+        # All the computations involving the words of all sentences in a batch
+        # at a given time step are done in parallel.
 
         ####################################################################################################
         # Instanciating our RNN model and retrieving the structure for returning the outputs and the state #
@@ -107,7 +115,7 @@ class PTBModel(object):
         # Defining the loss and cost functions for the model's learning to work #
         #########################################################################
         loss = tf.contrib.legacy_seq2seq.sequence_loss_by_example([logits], [tf.reshape(self._targets, [-1])],
-                                                                  [tf.ones([batch_size * num_steps])])
+                                                                  [tf.ones([batch_size * seq_num])])
         self._cost = cost = tf.reduce_sum(loss) / batch_size
 
         # Store the final state
@@ -122,7 +130,8 @@ class PTBModel(object):
         #################################################
         # Create a variable for the learning rate
         self._lr = tf.Variable(0.0, trainable=False)
-        # Get all TensorFlow variables marked as "trainable" (i.e. all of them except _lr, which we just created)
+        # Get all TensorFlow variables marked as "trainable" (i.e. all of them except _lr,
+        # which we just created)
         tvars = tf.trainable_variables()
         # Define the gradient clipping threshold
         grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars), max_grad_norm)
@@ -132,7 +141,6 @@ class PTBModel(object):
         self._train_op = optimizer.apply_gradients(zip(grads, tvars))
 
     # Helper functions for our LSTM RNN class
-
     # Assign the learning rate for this model
     def assign_lr(self, session, lr_value):
         session.run(tf.assign(self.lr, lr_value))
@@ -173,12 +181,13 @@ class PTBModel(object):
         return self._train_op
 
 
-##########################################################################################################################
-# run_epoch takes as parameters the current session, the model instance, the data to be fed, and the operation to be run #
-##########################################################################################################################
+###########################################################################
+# run_epoch takes as parameters the current session, the model instance,
+# the data to be fed, and the operation to be run #
+###########################################################################
 def run_epoch(session, m, data, eval_op, verbose=False):
     # Define the epoch size based on the length of the data, batch size and the number of steps
-    epoch_size = ((len(data) // m.batch_size) - 1) // m.num_steps
+    epoch_size = ((len(data) // m.batch_size) - 1) // m.num_seq
     start_time = time.time()
     costs = 0.0
     iters = 0
@@ -188,7 +197,7 @@ def run_epoch(session, m, data, eval_op, verbose=False):
     state = session.run(m.initial_state)
 
     # For each step and data point
-    for step, (x, y) in enumerate(reader.ptb_iterator(data, m.batch_size, m.num_steps)):
+    for step, (x, y) in enumerate(reader.ptb_iterator(data, m.batch_size, m.num_seq)):
 
         # Evaluate and return cost, state by running cost, final_state and the function passed as parameter
         cost, state, _ = session.run([m.cost, m.final_state, eval_op],
@@ -200,7 +209,7 @@ def run_epoch(session, m, data, eval_op, verbose=False):
         costs += cost
 
         # Add number of steps to iteration counter
-        iters += m.num_steps
+        iters += m.num_seq
 
         if verbose and step % (epoch_size // 10) == 10:
             print("%.3f perplexity: %.3f speed: %.0f wps" % (step * 1.0 / epoch_size, np.exp(costs / iters),
@@ -224,7 +233,8 @@ with tf.Graph().as_default(), tf.Session() as session:
         m = PTBModel(is_training=True)
 
     # Reuses the trained parameters for the validation and testing models
-    # They are different instances but use the same variables for weights and biases, they just don't change when data is input
+    # They are different instances but use the same variables for weights and biases,
+    # they just don't change when data is input
     with tf.variable_scope("model", reuse=True, initializer=initializer):
         mvalid = PTBModel(is_training=False)
         mtest = PTBModel(is_training=False)

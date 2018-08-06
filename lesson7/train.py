@@ -11,7 +11,7 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_string('name', 'default', 'the name of the model')
 tf.flags.DEFINE_integer('num_seqs', 32, 'number of seqs in batch')
-tf.flags.DEFINE_integer('num_steps', 20, 'length of one seq')
+tf.flags.DEFINE_integer('num_seq', 20, 'length of one seq')
 tf.flags.DEFINE_integer('lstm_size', 128, 'size of hidden layer')
 tf.flags.DEFINE_integer('num_layers', 2, 'number of lstm layers')
 tf.flags.DEFINE_boolean('use_embedding', False, 'if use embedding')
@@ -41,7 +41,7 @@ def main(_):
     Reader.save_to_file(os.path.join(FLAGS.name, 'converter.pkl'))
 
     arr = Reader.text_to_arr(text)
-    g = batch_generator(arr, FLAGS.num_seqs, FLAGS.num_steps)
+    g = batch_generator(arr, FLAGS.num_seqs, FLAGS.num_seq)
     print('build model')
     with tf.Graph().as_default():
         sess = tf.Session()
@@ -49,7 +49,7 @@ def main(_):
             char_rnn = CharRNN(
                 num_classes=Reader.vocab_size,
                 num_seqs=FLAGS.num_seqs,
-                num_steps=FLAGS.num_steps,
+                num_seq=FLAGS.num_seq,
                 lstm_size=FLAGS.lstm_size,
                 num_layers=FLAGS.num_layers,
                 learning_rate=FLAGS.learning_rate,

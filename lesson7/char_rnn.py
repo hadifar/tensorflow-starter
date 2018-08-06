@@ -22,7 +22,7 @@ class CharRNN(object):
     def __init__(self,
                  num_classes,
                  num_seqs=64,
-                 num_steps=50,
+                 num_seq=50,
                  lstm_size=128,
                  num_layers=2,
                  learning_rate=0.001,
@@ -32,13 +32,13 @@ class CharRNN(object):
                  use_embedding=False,
                  embedding_size=128):
         if sample:
-            num_seqs, num_steps = 1, 1
+            num_seqs, num_seq = 1, 1
         else:
-            num_seqs, num_steps = num_seqs, num_steps
+            num_seqs, num_seq = num_seqs, num_seq
 
         self.num_classes = num_classes
         self.num_seqs = num_seqs
-        self.num_steps = num_steps
+        self.num_seq = num_seq
         self.lstm_size = lstm_size
         self.num_layers = num_layers
         self.learning_rate = learning_rate
@@ -56,10 +56,10 @@ class CharRNN(object):
     def build_inputs(self):
         with tf.name_scope('inputs'):
             self.inputs = tf.placeholder(
-                tf.int32, shape=(self.num_seqs, self.num_steps), name='inputs')
+                tf.int32, shape=(self.num_seqs, self.num_seq), name='inputs')
             self.targets = tf.placeholder(
                 tf.int32,
-                shape=(self.num_seqs, self.num_steps),
+                shape=(self.num_seqs, self.num_seq),
                 name='targets')
             self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
 

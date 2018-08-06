@@ -79,7 +79,7 @@ def ptb_raw_data(data_path=None):
     return train_data, valid_data, test_data, vocabulary
 
 
-def ptb_iterator(raw_data, batch_size, num_steps):
+def ptb_iterator(raw_data, batch_size, num_seq):
     """Iterate on the raw PTB data.
 
     This generates batch_size pointers into the raw PTB data, and allows
@@ -88,15 +88,15 @@ def ptb_iterator(raw_data, batch_size, num_steps):
     Args:
       raw_data: one of the raw data outputs from ptb_raw_data.
       batch_size: int, the batch size.
-      num_steps: int, the number of unrolls.
+      num_seq: int, the number of unrolls.
 
     Yields:
-      Pairs of the batched data, each a matrix of shape [batch_size, num_steps].
+      Pairs of the batched data, each a matrix of shape [batch_size, num_seq].
       The second element of the tuple is the same data time-shifted to the
       right by one.
 
     Raises:
-      ValueError: if batch_size or num_steps are too high.
+      ValueError: if batch_size or num_seq are too high.
     """
     raw_data = np.array(raw_data, dtype=np.int32)
 
@@ -106,12 +106,12 @@ def ptb_iterator(raw_data, batch_size, num_steps):
     for i in range(batch_size):
         data[i] = raw_data[batch_len * i:batch_len * (i + 1)]
 
-    epoch_size = (batch_len - 1) // num_steps
+    epoch_size = (batch_len - 1) // num_seq
 
     if epoch_size == 0:
-        raise ValueError("epoch_size == 0, decrease batch_size or num_steps")
+        raise ValueError("epoch_size == 0, decrease batch_size or num_seq")
 
     for i in range(epoch_size):
-        x = data[:, i * num_steps:(i + 1) * num_steps]
-        y = data[:, i * num_steps + 1:(i + 1) * num_steps + 1]
+        x = data[:, i * num_seq:(i + 1) * num_seq]
+        y = data[:, i * num_seq + 1:(i + 1) * num_seq + 1]
         yield (x, y)
