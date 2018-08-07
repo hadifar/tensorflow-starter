@@ -25,7 +25,7 @@ vocabulary_size = 10000
 embedding_size = 32
 seq_len = 256
 learning_rate = 0.01
-lstm_size = 32
+rnn_size = 32
 batch_size = 256
 num_layers = 1
 
@@ -58,10 +58,10 @@ y = tf.placeholder(tf.int32, shape=[None, 2])
 embeddings = tf.get_variable("embedding", [vocabulary_size, embedding_size])
 inputs = tf.nn.embedding_lookup(embeddings, x)
 
-lstm_cell = tf.contrib.rnn.BasicLSTMCell(lstm_size)
-stacked_lstm = tf.contrib.rnn.MultiRNNCell([lstm_cell] * num_layers)
-initial_state = stacked_lstm.zero_state(batch_size, tf.float32)
-outputs, states = tf.nn.dynamic_rnn(stacked_lstm, inputs, initial_state=initial_state)
+rnn_cell = tf.contrib.rnn.BasicRNNCell(rnn_size)
+stacked_rnn = tf.contrib.rnn.MultiRNNCell([rnn_cell] * num_layers)
+initial_state = stacked_rnn.zero_state(batch_size, tf.float32)
+outputs, states = tf.nn.dynamic_rnn(stacked_rnn, inputs, initial_state=initial_state)
 output = tf.reshape(tf.split(outputs, seq_len, axis=1, name='split')[-1], [batch_size, -1])
 
 weights = tf.Variable(tf.truncated_normal([32, 2], stddev=0.1))
