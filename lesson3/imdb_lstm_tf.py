@@ -20,13 +20,13 @@ from lesson1.data_helper import DataHelper
 
 imdb = tf.keras.datasets.imdb
 
-training_iters = 200000
+training_iters = 150000
 vocabulary_size = 10000
-embedding_size = 16
+embedding_size = 32
 seq_len = 256
 learning_rate = 0.01
 lstm_size = 32
-batch_size = 100
+batch_size = 256
 num_layers = 1
 
 (train_data, train_labels), (test_data, test_labels) = imdb.load_data(num_words=vocabulary_size)
