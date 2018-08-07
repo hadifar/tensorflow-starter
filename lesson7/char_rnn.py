@@ -50,28 +50,29 @@ class CharRNN(object):
         self.inputs = None
         self.targets = None
         self.keep_prob = None
+        self.lstm_inputs = None
+        self.initial_state = None
+        self.lstm_outputs = None
+        self.final_state = None
+        self.logits = None
+        self.prediction = None
+        self.loss = None
+
         self.build_inputs()
         self.build_lstm()
 
     def build_inputs(self):
         with tf.name_scope('inputs'):
-            self.inputs = tf.placeholder(
-                tf.int32, shape=(self.num_seqs, self.num_seq), name='inputs')
-            self.targets = tf.placeholder(
-                tf.int32,
-                shape=(self.num_seqs, self.num_seq),
-                name='targets')
+            self.inputs = tf.placeholder(tf.int32, shape=(self.num_seqs, self.num_seq), name='inputs')
+            self.targets = tf.placeholder(tf.int32, shape=(self.num_seqs, self.num_seq), name='targets')
             self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
 
             if self.use_embedding:
                 self.lstm_inputs = tf.one_hot(self.inputs, self.num_classes)
             else:
                 with tf.device('/cpu:0'):
-                    embedding = tf.get_variable(
-                        name='embedding',
-                        shape=[self.num_classes, self.embedding_size])
-                    self.lstm_inputs = tf.nn.embedding_lookup(
-                        embedding, self.inputs)
+                    embedding = tf.get_variable(name='embedding', shape=[self.num_classes, self.embedding_size])
+                    self.lstm_inputs = tf.nn.embedding_lookup(embedding, self.inputs)
 
     def build_lstm(self):
 

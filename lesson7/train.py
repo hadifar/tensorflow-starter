@@ -43,70 +43,59 @@ def main(_):
     arr = Reader.text_to_arr(text)
     batch_gen = batch_generator(arr, FLAGS.num_seqs, FLAGS.num_seq)
     print('build model')
-    with tf.Graph().as_default():
-        sess = tf.Session()
-        with sess.as_default():
-            char_rnn = CharRNN(
-                num_classes=Reader.vocab_size,
-                num_seqs=FLAGS.num_seqs,
-                num_seq=FLAGS.num_seq,
-                lstm_size=FLAGS.lstm_size,
-                num_layers=FLAGS.num_layers,
-                learning_rate=FLAGS.learning_rate,
-                train_keep_prob=FLAGS.train_keep_prob,
-                use_embedding=FLAGS.use_embedding,
-                embedding_size=FLAGS.embedding_size)
 
-            # define training procedure
-            global_step = tf.Variable(0, trainable=False, name='global_step')
-            optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
-            # optimizer = tf.contrib.opt.NadamOptimizer(learning_rate=FLAGS.learning_rate)
-            # clipping gradients
-            tvars = tf.trainable_variables()
+    with tf.Session() as sess:
+        char_rnn = CharRNN(
+            num_classes=Reader.vocab_size,
+            num_seqs=FLAGS.num_seqs,
+            num_seq=FLAGS.num_seq,
+            lstm_size=FLAGS.lstm_size,
+            num_layers=FLAGS.num_layers,
+            learning_rate=FLAGS.learning_rate,
+            train_keep_prob=FLAGS.train_keep_prob,
+            use_embedding=FLAGS.use_embedding,
+            embedding_size=FLAGS.embedding_size)
 
-            grads, _ = tf.clip_by_global_norm(
-                tf.gradients(ys=char_rnn.loss, xs=tvars),
-                clip_norm=char_rnn.grad_clip)
+        # define training procedure
+        global_step = tf.Variable(0, trainable=False, name='global_step')
+        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+        train_step = optimizer.minimize(char_rnn.loss, global_step=global_step)
 
-            train_op = optimizer.apply_gradients(
-                grads_and_vars=zip(grads, tvars), global_step=global_step)
+        # clipping gradients
+        saver = tf.train.Saver()
+        sess.run(tf.global_variables_initializer())
 
-            saver = tf.train.Saver()
-            sess.run(tf.global_variables_initializer())
-            if os.path.exists(model_path):
-                saver.restore(sess, tf.train.latest_checkpoint(model_path))
-                print('model restored!')
-            else:
-                os.makedirs(model_path)
+        if os.path.exists(model_path):
+            saver.restore(sess, tf.train.latest_checkpoint(model_path))
+            print('model restored!')
+        else:
+            os.makedirs(model_path)
 
-            new_state = sess.run(char_rnn.initial_state)
+        new_state = sess.run(char_rnn.initial_state)
 
-            for x, y in batch_gen:
-                start = time.time()
-                feed_dict = {
-                    char_rnn.inputs: x,
-                    char_rnn.targets: y,
-                    char_rnn.keep_prob: FLAGS.train_keep_prob,
-                    char_rnn.initial_state: new_state
-                }
+        for x, y in batch_gen:
+            start = time.time()
+            feed_dict = {
+                char_rnn.inputs: x,
+                char_rnn.targets: y,
+                char_rnn.keep_prob: FLAGS.train_keep_prob,
+                char_rnn.initial_state: new_state
+            }
+            _, step, new_state, loss = sess.run([train_step, global_step, char_rnn.final_state, char_rnn.loss],
+                                                feed_dict)
 
-                _, step, new_state, loss = sess.run([
-                    train_op, global_step, char_rnn.final_state, char_rnn.loss
-                ], feed_dict)
-
-                end = time.time()
-                current_step = tf.train.global_step(sess, global_step)
-                if step % FLAGS.log_every == 0:
-                    print('step: {}/{}... '.format(step, FLAGS.max_steps),
-                          'loss: {:.4f}... '.format(loss),
-                          '{:.4f} sec/batch'.format((end - start)))
-                if current_step % FLAGS.save_model_every == 0:
-                    saver.save(
-                        sess,
-                        os.path.join(model_path, 'model.ckpt'),
-                        global_step=current_step)
-                if current_step >= FLAGS.max_steps:
-                    break
+            end = time.time()
+            current_step = tf.train.global_step(sess, global_step)
+            if step % FLAGS.log_every == 0:
+                print('step: {}/{}... '.format(step, FLAGS.max_steps),
+                      'loss: {:.4f}... '.format(loss),
+                      '{:.4f} sec/batch'.format((end - start)))
+            if current_step % FLAGS.save_model_every == 0:
+                saver.save(sess,
+                           os.path.join(model_path, 'model.ckpt'),
+                           global_step=current_step)
+            if current_step >= FLAGS.max_steps:
+                break
 
 
 if __name__ == '__main__':
