@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import numpy as np
 import tensorflow as tf
 
 from lesson1.data_helper import DataHelper
@@ -29,8 +30,8 @@ epoch = 40
 
 (train_x, train_y), (test_x, test_y) = imdb.load_data(num_words=vocab_size)
 
-train_y = tf.keras.utils.to_categorical(train_y)
-test_y = tf.keras.utils.to_categorical(test_y)
+# train_y = tf.keras.utils.to_categorical(train_y)
+# test_y = tf.keras.utils.to_categorical(test_y)
 
 train_x = tf.keras.preprocessing.sequence.pad_sequences(train_x, maxlen=seq_len)
 test_x = tf.keras.preprocessing.sequence.pad_sequences(test_x, maxlen=seq_len)
@@ -39,7 +40,7 @@ data_helper = DataHelper(train_x, train_y)
 
 # Input
 X = tf.placeholder(dtype=tf.int32, shape=[None, seq_len])
-Y = tf.placeholder(dtype=tf.int32, shape=[None, 2])
+Y = tf.placeholder(dtype=tf.int32, shape=[None, 1])
 
 # Model
 embedding = tf.Variable(tf.truncated_normal([vocab_size, embed_size]))
@@ -48,13 +49,13 @@ inputs = tf.nn.embedding_lookup(embedding, X)  # [batch_size * 256 * 100]
 pooling = tf.layers.max_pooling1d(inputs, 2, strides=1, padding="valid")  # [?,32]
 global_pooling = tf.reduce_mean(pooling, 1)
 dense1 = tf.layers.dense(global_pooling, 16, activation=tf.nn.relu)
-logit = tf.layers.dense(dense1, 2)
-pred = tf.nn.softmax(logit)
-
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(Y, 1))
+logit = tf.layers.dense(dense1, 1)
+pred = tf.round(tf.nn.sigmoid(logit))
+# pred = tf.cast(pred, tf.int32)
+correct_pred = tf.equal(pred, tf.cast(Y, tf.float32))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=Y, logits=logit))
+cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=tf.cast(Y, tf.float32), logits=logit))
 optimizer = tf.train.AdamOptimizer().minimize(cost)
 
 with tf.Session() as sess:
@@ -65,6 +66,7 @@ with tf.Session() as sess:
         # We will read a batch of 100 images [100 x 784] as batch_x
         # batch_y is a matrix of [100x10]
         batch_x, batch_y = data_helper.next_batch(batch_size)
+        batch_y = np.expand_dims(batch_y, 1)
 
         # We consider each row of the image as one sequence
         # Reshape data to get 28 seq of 28 elements, so that, batxh_x is [100x28x28]
@@ -89,6 +91,7 @@ with tf.Session() as sess:
     while test_helper.epoch_completed == 0:
         step = step + 1
         x_batch, y_batch = test_helper.next_batch(batch_size)
+        y_batch = np.expand_dims(y_batch, 1)
         acc = acc + sess.run(accuracy, feed_dict={X: x_batch, Y: y_batch})
-        print("Testing Accuracy on step ", step, ' is: ', accuracy)
+        print("Testing Accuracy on step ", step, ' is: ', acc / step)
     print('final accuracy', acc / step)
