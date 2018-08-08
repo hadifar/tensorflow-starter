@@ -15,12 +15,51 @@
 # limitations under the License.
 # ==============================================================================
 
-from tensorflow import keras
+import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
+from tensorflow import keras
 
-(train_x, train_y), (test_x, test_y) = keras.datasets.boston_housing.load_data()
 
-t = np.random.random(train_y.shape)
-order = np.argsort(t)
-train_data = train_x[order]
-train_labels = train_y[order]
+def plot_history(history):
+    plt.figure()
+    plt.xlabel('Epoch')
+    plt.ylabel('Mean Abs Error [1000$]')
+    plt.plot(history.epoch, np.array(history.history['mean_absolute_error']),
+             label='Train Loss')
+    plt.plot(history.epoch, np.array(history.history['val_mean_absolute_error']),
+             label='Val loss')
+    plt.legend()
+    plt.ylim([0, 5])
+    plt.show()
+
+
+(train_data, train_labels), (test_data, test_labels) = keras.datasets.boston_housing.load_data()
+
+order = np.argsort(np.random.random(train_labels.shape))
+train_data = train_data[order]
+train_labels = train_labels[order]
+
+print(train_data.shape)
+print(test_data.shape)
+print(50 * '-')
+
+mean = train_data.mean(axis=0)
+std = train_data.std(axis=0)
+train_data = (train_data - mean) / std
+test_data = (test_data - mean) / std
+
+model = keras.Sequential()
+model.add(keras.layers.Dense(64, activation=tf.nn.relu))
+model.add(keras.layers.Dense(64, activation=tf.nn.relu))
+model.add(keras.layers.Dense(1))
+
+optimizer = keras.optimizers.Nadam()
+early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=20)
+
+model.compile(optimizer, loss='mse', metrics=['mae'])
+history = model.fit(train_data, train_labels, batch_size=128, epochs=500, validation_split=0.2, callbacks=[early_stop])
+
+plot_history(history)
+prediction = model.evaluate(test_data, test_labels)
+print(prediction)
