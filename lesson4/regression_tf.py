@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
@@ -40,26 +41,33 @@ l1 = tf.layers.dense(x, 64, activation=tf.nn.relu)
 l2 = tf.layers.dense(l1, 64, activation=tf.nn.relu)
 pred = tf.layers.dense(l2, 1)
 
-mae = tf.metrics.mean_absolute_error(labels=y, predictions=pred)
+mae, mae_op = tf.metrics.mean_absolute_error(labels=y, predictions=pred)
 loss = tf.losses.mean_squared_error(labels=y, predictions=pred)
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(loss, global_step=global_step)
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+train_step = optimizer.minimize(loss, global_step=global_step)
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
+    sess.run(tf.local_variables_initializer())
 
     while True:
         batch_x, batch_y = data_helper.next_batch(32)
-
+        batch_y = np.expand_dims(batch_y, axis=1)
         feed_data = {x: batch_x,
                      y: batch_y}
 
-        _, mae, step = sess.run([optimizer, mae, global_step], feed_dict=feed_data)
+        _, step, mae = sess.run([train_step, global_step, mae_op], feed_dict=feed_data)
 
         current_step = tf.train.global_step(sess, global_step)
 
         if step % 10 == 0:
             print('step: {}/{}... '.format(step, 500),
-                  'loss: {:.4f}... '.format(loss))
+                  'mae: {}'.format(mae))
 
         if current_step >= 500:
             break
+
+    test_labels = np.expand_dims(test_labels, axis=1)
+    feed_data = {x: test_data,
+                 y: test_labels}
+    print(sess.run([mae_op], feed_dict=feed_data))
