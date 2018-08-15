@@ -12,8 +12,8 @@ tf.flags.DEFINE_integer('lstm_size', 128, 'size of hidden state')
 tf.flags.DEFINE_integer('num_layers', 2, 'number of the lstm layers')
 tf.flags.DEFINE_boolean('use_embedding', False, 'whether to use embedding')
 tf.flags.DEFINE_integer('embedding_size', 128, 'size of embedding')
-tf.flags.DEFINE_string('converter_path', '../lesson7/default/converter.pkl', 'converter path')
-tf.flags.DEFINE_string('checkpoint_path', '../lesson7/default/model', 'checkpoint path')
+tf.flags.DEFINE_string('converter_path', '../lesson7/default2/converter.pkl', 'converter path')
+tf.flags.DEFINE_string('checkpoint_path', '../lesson7/default2/model', 'checkpoint path')
 tf.flags.DEFINE_string('start_string', '',
                        'use this string to start generating')
 tf.flags.DEFINE_integer('max_length', 1000, 'max length to generate')
@@ -44,7 +44,6 @@ def main(_):
 
         for c in start:
             x = np.zeros((1, 1))
-            # 输入单个字符
             x[0, 0] = c
             feed_dict = {
                 char_rnn.inputs: x,
@@ -71,7 +70,6 @@ def main(_):
                 [char_rnn.prediction, char_rnn.final_state],
                 feed_dict=feed_dict)
             c = pick_top_n(preds, converter.vocab_size)
-            # 添加生成的新字符
             samples.append(c)
 
         samples = np.array(samples)

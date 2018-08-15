@@ -9,21 +9,21 @@ from lesson7.utils import batch_generator, TextReader
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('name', 'default', 'the name of the model')
+tf.flags.DEFINE_string('name', 'default2', 'the name of the model')
 tf.flags.DEFINE_integer('num_seqs', 32, 'number of seqs in batch')
 tf.flags.DEFINE_integer('num_seq', 20, 'length of one seq')
 tf.flags.DEFINE_integer('lstm_size', 128, 'size of hidden layer')
 tf.flags.DEFINE_integer('num_layers', 2, 'number of lstm layers')
 tf.flags.DEFINE_boolean('use_embedding', False, 'if use embedding')
 tf.flags.DEFINE_integer('embedding_size', 128, 'size of embedding')
-tf.flags.DEFINE_float('learning_rate', 0.005, 'learning_rate')
+tf.flags.DEFINE_float('learning_rate', 0.009, 'learning_rate')
 tf.flags.DEFINE_float('train_keep_prob', 0.75,
                       'dropout rate during training process')
-tf.flags.DEFINE_string('input_file', '../lesson7/data/all_poem.txt', 'utf-8 encoded input file')
-tf.flags.DEFINE_integer('max_steps', 20000, 'max steps of training')
+tf.flags.DEFINE_string('input_file', '../lesson7/data/ferdosi.txt', 'utf-8 encoded input file')
+tf.flags.DEFINE_integer('max_steps', 30000, 'max steps of training')
 tf.flags.DEFINE_integer('save_model_every', 1000,
                         'save the model every 1000 steps')
-tf.flags.DEFINE_integer('log_every', 10, 'log the summaries every 10 steps')
+tf.flags.DEFINE_integer('log_every', 50, 'log the summaries every 10 steps')
 tf.flags.DEFINE_integer('max_vocab', 3500, 'the maximum of char number')
 
 

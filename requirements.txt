@@ -1,2 +1,4 @@
-tensorflow
+sklearn
+pandas
 matplotlib
+tensorflow
