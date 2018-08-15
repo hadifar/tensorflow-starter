@@ -26,8 +26,9 @@ embedding_size = 32
 seq_len = 256
 learning_rate = 0.01
 rnn_size = 32
-batch_size = 256
+batch_size = 512
 num_layers = 1
+nb_epoch = 150
 
 (train_data, train_labels), (test_data, test_labels) = imdb.load_data(num_words=vocabulary_size)
 
@@ -53,6 +54,7 @@ data_helper = DataHelper(train_data, train_labels)
 # Input data
 x = tf.placeholder(tf.int32, shape=[None, seq_len])
 y = tf.placeholder(tf.int32, shape=[None, 2])
+global_step = tf.Variable(0, trainable=False)
 
 # Model
 embeddings = tf.get_variable("embedding", [vocabulary_size, embedding_size])
@@ -74,40 +76,32 @@ correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=logit))
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+train_step = optimizer.minimize(cost, global_step=global_step)
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    step = 1
-    while step * batch_size < training_iters:
 
-        # We will read a batch of 100 images [100 x 784] as batch_x
-        # batch_y is a matrix of [100x10]
+    while True:
+
         batch_x, batch_y = data_helper.next_batch(batch_size)
 
-        # We consider each row of the image as one sequence
-        # Reshape data to get 28 seq of 28 elements, so that, batxh_x is [100x28x28]
-        # batch_x = batch_x.reshape((batch_size, n_steps, n_input))
+        _, step = sess.run([train_step, global_step], feed_dict={x: batch_x, y: batch_y})
 
-        # Run optimization op (backprop)
-        sess.run(optimizer, feed_dict={x: batch_x, y: batch_y})
+        current_step = tf.train.global_step(sess, global_step)
 
-        if step % batch_size == 0:
+        if step % 10 == 0:
             # Calculate batch accuracy
             acc = sess.run(accuracy, feed_dict={x: batch_x, y: batch_y})
             # Calculate batch loss
             loss = sess.run(cost, feed_dict={x: batch_x, y: batch_y})
-            print("Iter " + str(step * batch_size) + ", Minibatch Loss= " +
+            print("Iter " + str(current_step) + ", Minibatch Loss= " +
                   "{:.6f}".format(loss) + ", Training Accuracy= " +
                   "{:.5f}".format(acc))
-        step += 1
-    print("Optimization Finished!")
-    test_helper = DataHelper(test_data, test_labels)
-    step = 0
-    acc = 0
-    while test_helper.epoch_completed == 0:
-        step = step + 1
-        x_batch, y_batch = test_helper.next_batch(batch_size)
-        acc = acc + sess.run(accuracy, feed_dict={x: x_batch, y: y_batch})
-        print("Testing Accuracy on step ", step, ' is: ', accuracy)
-    print('final accuracy', acc / step)
+
+        if current_step > nb_epoch:
+            break
+
+    feed_data = {x: test_data, y: test_labels}
+    acc = sess.run([accuracy], feed_dict=feed_data)
+    print('accuracy: {}'.format(acc))
