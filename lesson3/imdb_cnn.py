@@ -69,7 +69,7 @@ conv3 = tf.layers.dropout(conv3, rate=dropout)
 
 conv4 = tf.layers.conv1d(conv3, 8, 64, strides=1, padding='same', activation=tf.nn.relu)
 
-pool1 = tf.layers.max_pooling1d(conv4, pool_size=2, strides=1)
+pool1 = tf.layers.max_pooling1d(conv4, pool_size=2, strides=2)
 
 flatten = tf.layers.flatten(pool1)
 
