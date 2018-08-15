@@ -27,8 +27,8 @@ seq_len = 256
 learning_rate = 0.01
 rnn_size = 32
 batch_size = 512
-num_layers = 1
-nb_epoch = 150
+
+nb_epoch = 300
 
 (train_data, train_labels), (test_data, test_labels) = imdb.load_data(num_words=vocabulary_size)
 
@@ -61,9 +61,8 @@ embeddings = tf.get_variable("embedding", [vocabulary_size, embedding_size])
 inputs = tf.nn.embedding_lookup(embeddings, x)
 
 rnn_cell = tf.contrib.rnn.BasicRNNCell(rnn_size)
-stacked_rnn = tf.contrib.rnn.MultiRNNCell([rnn_cell] * num_layers)
-initial_state = stacked_rnn.zero_state(batch_size, tf.float32)
-outputs, states = tf.nn.dynamic_rnn(stacked_rnn, inputs, initial_state=initial_state)
+initial_state = rnn_cell.zero_state(batch_size, dtype=tf.float32)
+outputs, states = tf.nn.dynamic_rnn(rnn_cell, inputs, initial_state=initial_state)
 output = tf.reshape(tf.split(outputs, seq_len, axis=1, name='split')[-1], [batch_size, -1])
 
 weights = tf.Variable(tf.truncated_normal([32, 2], stddev=0.1))
