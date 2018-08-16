@@ -18,33 +18,23 @@ import tensorflow as tf
 
 from lesson1.data_helper import DataHelper
 
+tf.reset_default_graph()
+
 imdb = tf.keras.datasets.imdb
 
-training_iters = 150000
 vocabulary_size = 10000
-embedding_size = 32
+embedding_size = 64
 seq_len = 256
-learning_rate = 0.01
-rnn_size = 32
+learning_rate = 0.001
+rnn_size = 64
 batch_size = 512
 
 nb_epoch = 300
 
 (train_data, train_labels), (test_data, test_labels) = imdb.load_data(num_words=vocabulary_size)
 
-word_index = imdb.get_word_index()
-
-word_index = {k: (v + 3) for k, v in word_index.items()}
-word_index["<PAD>"] = 0
-word_index["<START>"] = 1
-word_index["<UNK>"] = 2  # unknown
-word_index["<UNUSED>"] = 3
-reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
-
-train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data, maxlen=256, padding='post',
-                                                           value=word_index["<PAD>"])
-test_data = tf.keras.preprocessing.sequence.pad_sequences(test_data, maxlen=256, padding='post',
-                                                          value=word_index["<PAD>"])
+train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data, maxlen=256)
+test_data = tf.keras.preprocessing.sequence.pad_sequences(test_data, maxlen=256)
 
 train_labels = tf.keras.utils.to_categorical(train_labels)
 test_labels = tf.keras.utils.to_categorical(test_labels)
@@ -60,15 +50,17 @@ global_step = tf.Variable(0, trainable=False)
 embeddings = tf.get_variable("embedding", [vocabulary_size, embedding_size])
 inputs = tf.nn.embedding_lookup(embeddings, x)
 
+# define RNN layer
 rnn_cell = tf.contrib.rnn.BasicRNNCell(rnn_size)
 initial_state = rnn_cell.zero_state(batch_size, dtype=tf.float32)
 outputs, states = tf.nn.dynamic_rnn(rnn_cell, inputs, initial_state=initial_state)
+# RNN outputs: [batch_size * seq_len * hidden_size]
+# split and extract only last output
 output = tf.reshape(tf.split(outputs, seq_len, axis=1, name='split')[-1], [batch_size, -1])
 
-weights = tf.Variable(tf.truncated_normal([32, 2], stddev=0.1))
-biases = tf.Variable(tf.ones([2]) / 10)
-
-logit = tf.matmul(output, weights) + biases
+# Dense layer
+dense1 = tf.layers.dense(output, 16, activation='relu')
+logit = tf.layers.dense(output, 2)
 pred = tf.nn.softmax(logit)
 
 correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
@@ -94,13 +86,19 @@ with tf.Session() as sess:
             acc = sess.run(accuracy, feed_dict={x: batch_x, y: batch_y})
             # Calculate batch loss
             loss = sess.run(cost, feed_dict={x: batch_x, y: batch_y})
-            print("Iter " + str(current_step) + ", Minibatch Loss= " +
+            print("Iter " + str(current_step) + ", Mini batch Loss= " +
                   "{:.6f}".format(loss) + ", Training Accuracy= " +
                   "{:.5f}".format(acc))
 
         if current_step > nb_epoch:
             break
 
-    feed_data = {x: test_data, y: test_labels}
-    acc = sess.run([accuracy], feed_dict=feed_data)
-    print('accuracy: {}'.format(acc))
+    test_helper = DataHelper(test_data, test_labels)
+    step = 0
+    acc = 0
+    while test_helper.epoch_completed == 0:
+        step = step + 1
+        x_batch, y_batch = test_helper.next_batch(batch_size)
+        cur_acc = sess.run(accuracy, feed_dict={x: x_batch, y: y_batch})
+        acc = acc + cur_acc
+    print('final accuracy', acc / step)

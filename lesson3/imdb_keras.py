@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-import tensorflow as tf
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 imdb = tf.keras.datasets.imdb
 
@@ -49,7 +49,6 @@ val_label = train_labels[:10000]
 train_data = train_data[10000:]
 train_labels = train_labels[10000:]
 
-
 model = tf.keras.Sequential()
 model.add(tf.keras.layers.Embedding(10000, 16))
 model.add(tf.keras.layers.GlobalAveragePooling1D())
@@ -72,8 +71,6 @@ eval = model.evaluate(test_data, test_labels, batch_size=5)
 print(eval)
 history_dict = history.history
 history_dict.keys()
-
-
 
 acc = history.history['acc']
 val_acc = history.history['val_acc']
