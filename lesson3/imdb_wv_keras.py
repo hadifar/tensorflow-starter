@@ -21,27 +21,8 @@ imdb = tf.keras.datasets.imdb
 
 (train_data, train_labels), (test_data, test_labels) = imdb.load_data(num_words=10000)
 
-word_index = imdb.get_word_index()
-
-word_index = {k: (v + 3) for k, v in word_index.items()}
-word_index["<PAD>"] = 0
-word_index["<START>"] = 1
-word_index["<UNK>"] = 2  # unknown
-word_index["<UNUSED>"] = 3
-reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
-
-
-def decode_review(text):
-    return ' '.join([reverse_word_index.get(i, '?') for i in text])
-
-
-print(max([len(seq) for seq in train_data]))
-print(min([len(seq) for seq in train_data]))
-
-train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data, maxlen=256, padding='post',
-                                                           value=word_index["<PAD>"])
-test_data = tf.keras.preprocessing.sequence.pad_sequences(test_data, maxlen=256, padding='post',
-                                                          value=word_index["<PAD>"])
+train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data, maxlen=256)
+test_data = tf.keras.preprocessing.sequence.pad_sequences(test_data , maxlen=256)
 
 val_data = train_data[:10000]
 val_label = train_labels[:10000]
@@ -67,8 +48,8 @@ history = model.fit(train_data,
                     validation_data=(val_data, val_label),
                     verbose=1)
 
-eval = model.evaluate(test_data, test_labels, batch_size=5)
-print(eval)
+evaluation = model.evaluate(test_data, test_labels, batch_size=5)
+print(evaluation)
 history_dict = history.history
 history_dict.keys()
 
