@@ -140,7 +140,7 @@ correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(Y, 1))
 accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
 
 summary_acc = tf.summary.scalar("training_accuracy", accuracy)
-summary_loss = tf.summary.scalar("validation_loss", loss)
+summary_loss = tf.summary.scalar("training_loss", loss)
 summary_merged = tf.summary.merge_all()
 
 writer = tf.summary.FileWriter('./graphs/logreg', tf.get_default_graph())
