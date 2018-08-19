@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-import math
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -24,7 +23,7 @@ import time
 import numpy as np
 # tf.enable_eager_execution()
 
-from lesson6 import utils
+from lesson6.assignment1 import utils
 
 # Define paramaters for the model
 learning_rate = 0.008

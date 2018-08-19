@@ -23,7 +23,7 @@ import tensorflow as tf
 import time
 # tf.enable_eager_execution()
 
-from lesson6 import utils
+from lesson6.assignment1 import utils
 
 # Define paramaters for the model
 learning_rate = 0.01
