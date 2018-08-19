@@ -126,7 +126,7 @@ loss = tf.reduce_mean(loss)
 
 
 # Step 6: define optimizer
-# using Adamn Optimizer with pre-defined learning rate to minimize loss
+# using Adam Optimizer with pre-defined learning rate to minimize loss
 optimizer = tf.train.AdamOptimizer().minimize(loss)
 #############################
 ########## TO DO ############
