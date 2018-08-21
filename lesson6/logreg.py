@@ -44,9 +44,6 @@ train_data = train_data.shuffle(10000)  # if you want to shuffle your data
 train_data = train_data.batch(batch_size)
 
 # create testing Dataset and batch it
-#############################
-########## TO DO ############
-#############################
 test_data = tf.data.Dataset.from_tensor_slices(test)
 test_data = test_data.shuffle(10000)
 test_data = test_data.batch(batch_size)

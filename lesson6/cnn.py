@@ -65,9 +65,6 @@ test_init = iterator.make_initializer(test_data)  # initializer for train_data
 # b is initialized to 0
 # shape of w depends on the dimension of X and Y so that Y = tf.matmul(X, w)
 # shape of b depends on Y
-#############################
-########## TO DO ############
-#############################
 
 K = 6
 L = 12
