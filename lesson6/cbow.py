@@ -19,7 +19,7 @@ import os
 import tensorflow as tf
 from tensorboard.plugins import projector
 
-from lesson6.assignment1 import word2vec_utils
+from lesson6 import word2vec_utils
 
 FLAGS = tf.flags.FLAGS
 

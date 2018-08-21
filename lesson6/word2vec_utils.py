@@ -3,7 +3,7 @@ import random
 import sys
 from collections import Counter
 
-from lesson6.assignment1.utils import download_one_file, safe_mkdir
+from lesson6.utils import download_one_file, safe_mkdir
 
 sys.path.append('..')
 

@@ -5,7 +5,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
 from tensorflow.contrib.tensorboard.plugins import projector
 
-from lesson6.assignment1 import word2vec_utils
+from lesson6 import word2vec_utils
 
 FLAGS = tf.flags.FLAGS
 
@@ -32,7 +32,6 @@ class SkipGram(object):
         self.embed_dim = embed_dim
         self.lr = learning_rate
         self.skip_step = skip_step
-        self.global_step = tf.get_variable(name='global_step', trainable=False, initializer=tf.constant(0))
 
     def _import_data(self):
         with tf.name_scope('data'):
@@ -97,9 +96,8 @@ class SkipGram(object):
 
             total_loss = 0.0  # we use this to calculate late average loss in the last SKIP_STEP steps
             writer = tf.summary.FileWriter('graphs/word2vec/lr' + str(self.lr), sess.graph)
-            initial_step = self.global_step.eval()
 
-            for index in range(initial_step, initial_step + epoch):
+            for index in range(epoch):
                 try:
                     _, loss_batch, summary = sess.run([self.optimizer, self.loss, self.summary_op])
                     writer.add_summary(summary, global_step=index)

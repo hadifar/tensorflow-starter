@@ -23,7 +23,7 @@ import tensorflow as tf
 import time
 # tf.enable_eager_execution()
 
-from lesson6.assignment1 import utils
+from lesson6 import utils
 
 # Define paramaters for the model
 learning_rate = 0.01
@@ -33,7 +33,7 @@ n_train = 60000
 n_test = 10000
 
 # Step 1: Read in data
-mnist_folder = '/Users/mac/PycharmProjects/tensorflow-starter/lesson6/assignment1/data'
+mnist_folder = '/Users/mac/PycharmProjects/tensorflow-starter/lesson6/data'
 utils.download_mnist(mnist_folder)
 train, val, test = utils.read_mnist(mnist_folder, flatten=True)
 
@@ -64,9 +64,6 @@ test_init = iterator.make_initializer(test_data)  # initializer for train_data
 # b is initialized to 0
 # shape of w depends on the dimension of X and Y so that Y = tf.matmul(X, w)
 # shape of b depends on Y
-#############################
-########## TO DO ############
-#############################
 
 w = tf.get_variable(name='weight',
                     initializer=tf.truncated_normal(shape=[784, 10], mean=0, stddev=0.01))
@@ -76,26 +73,17 @@ b = tf.get_variable(name='bias', initializer=tf.zeros([10]))
 # the model that returns the logits.
 # this logits will be later passed through softmax layer
 logits = tf.matmul(img, w) + b
-#############################
-########## TO DO ############
-#############################
 
 
 # Step 5: define loss function
 # use cross entropy of softmax of logits as the loss function
 loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=label, logits=logits)
 loss = tf.reduce_mean(loss)
-#############################
-########## TO DO ############
-#############################
 
 
 # Step 6: define optimizer
 # using Adamn Optimizer with pre-defined learning rate to minimize loss
 optimizer = tf.train.AdamOptimizer().minimize(loss)
-#############################
-########## TO DO ############
-#############################
 
 
 # Step 7: calculate accuracy with test set
