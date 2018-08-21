@@ -61,6 +61,16 @@ def generate_sample(index_words, context_window_size):
             yield center, target
 
 
+def generate_sample2(index_words, context_window_size):
+    """ Form training pairs according to the skip-gram model. """
+    for index, target in enumerate(index_words):
+        # get a random target before the center word
+        pre_ = index_words[max(0, index - context_window_size): index]
+        # get a random target after the center word
+        aft_ = index_words[index + 1: index + context_window_size + 1]
+        yield pre_ + aft_, target
+
+
 def most_common_words(visual_fld, num_visualize):
     """ create a list of num_visualize most frequent words to visualize on TensorBoard.
     saved to visualization/vocab_[num_visualize].tsv
@@ -89,3 +99,20 @@ def batch_gen(download_url, expected_byte, vocab_size, batch_size,
         for index in range(batch_size):
             center_batch[index], target_batch[index] = next(single_gen)
         yield center_batch, target_batch
+
+
+def batch_gen2(download_url, expected_byte, vocab_size, batch_size, skip_window,visual_fld):
+    local_dest = '/Users/mac/Desktop/word2vec-mac/text8.zip'
+    download_one_file(download_url, local_dest, expected_byte)
+    words = read_data(local_dest)
+    dictionary, _ = build_vocab(words, vocab_size, visual_fld)
+    index_words = convert_words_to_index(words, dictionary)
+    del words  # to save memory
+    single_gen = generate_sample2(index_words, skip_window)
+
+    while True:
+        context_batch = np.zeros([batch_size, skip_window * 2], dtype=np.int32)
+        target_batch = np.zeros([batch_size, 1])
+        for index in range(batch_size):
+            context_batch[index], target_batch[index] = next(single_gen)
+        yield context_batch, target_batch

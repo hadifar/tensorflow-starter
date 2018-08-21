@@ -50,7 +50,7 @@ class CBow(object):
     def _import_data(self):
         with tf.name_scope('data'):
             self.iterator = self.dataset.make_initializable_iterator()
-            self.center_words, self.target_words = self.iterator.get_next()
+            self.context_words, self.target_words = self.iterator.get_next()
 
     def _create_embedding(self):
         with tf.name_scope('embedding'):
@@ -58,7 +58,7 @@ class CBow(object):
                                                 initializer=tf.random_uniform([self.vocab_size, self.embed_dim],
                                                                               minval=-1,
                                                                               maxval=1))
-            self.embed = tf.nn.embedding_lookup(self.embed_matrix, self.center_words)
+            self.embed = tf.reduce_mean(tf.nn.embedding_lookup(self.embed_matrix, self.context_words), axis=1)
 
     def _create_loss(self):
         with tf.name_scope('loss'):
@@ -108,15 +108,13 @@ class CBow(object):
 
             for index in range(initial_step, initial_step + epoch):
                 try:
-                    _, loss_batch, summary = sess.run(
-                        [self.optimizer, self.loss, self.summary_op])
-
+                    _, loss_batch, summary = sess.run([self.optimizer, self.loss, self.summary_op])
                     writer.add_summary(summary, global_step=index)
                     total_loss += loss_batch
                     if (index + 1) % self.skip_step == 0:
                         print('Average loss at step {}: {:5.1f}'.format(index, total_loss / self.skip_step))
                         total_loss = 0.0
-                        saver.save(sess, 'checkpoints/skip-gram', index)
+                        saver.save(sess, 'checkpoints/cbow', index)
 
                 except tf.errors.OutOfRangeError:
                     sess.run(self.iterator.initializer)
@@ -162,11 +160,11 @@ class CBow(object):
 
 def main(_):
     def gen():
-        yield from word2vec_utils.batch_gen(FLAGS.DOWNLOAD_URL, FLAGS.EXPECTED_BYTES, FLAGS.VOCAB_SIZE,
-                                            FLAGS.BATCH_SIZE, FLAGS.SKIP_WINDOW, FLAGS.VISUAL_FLD)
+        yield from word2vec_utils.batch_gen2(FLAGS.DOWNLOAD_URL, FLAGS.EXPECTED_BYTES, FLAGS.VOCAB_SIZE,
+                                             FLAGS.BATCH_SIZE, FLAGS.SKIP_WINDOW, FLAGS.VISUAL_FLD)
 
     dataset = tf.data.Dataset.from_generator(gen, (tf.int32, tf.int32),
-                                             (tf.TensorShape([FLAGS.BATCH_SIZE]),
+                                             (tf.TensorShape([FLAGS.BATCH_SIZE, FLAGS.SKIP_WINDOW * 2]),
                                               tf.TensorShape([FLAGS.BATCH_SIZE, 1])))
 
     model = CBow(dataset, FLAGS.VOCAB_SIZE, FLAGS.EMBED_SIZE, FLAGS.NEG_SAMPLES, FLAGS.LEARNING_RATE, FLAGS.SKIP_STEP)
