@@ -17,6 +17,7 @@
 
 import numpy as np
 import scipy.io
+import tensorflow as tf
 
 from lesson8 import utils
 
@@ -57,8 +58,11 @@ class VGG(object):
             for small images, you probably don't want to skip any pixel
         """
         ###############################
-        ## TO DO
-        out = None
+        W_, b_ = self._weights(layer_idx, layer_name)
+        W, b = tf.get_variable(W_), tf.get_variable(b_)
+        conv2d = tf.nn.conv2d(prev_layer, W, strides=[1, 1, 1, 1], padding="SAME")
+        conv2d = tf.nn.bias_add(conv2d, b)
+        out = tf.nn.relu(conv2d)
         ###############################
         setattr(self, layer_name, out)
 
@@ -73,8 +77,7 @@ class VGG(object):
         Hint for choosing strides and kszie: choose what you feel appropriate
         """
         ###############################
-        ## TO DO
-        out = None
+        out = tf.nn.avg_pool(prev_layer, [1, 5, 5, 1], [1, 2, 2, 1])
         ###############################
         setattr(self, layer_name, out)
 
