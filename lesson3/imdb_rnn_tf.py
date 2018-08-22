@@ -16,7 +16,7 @@
 # ==============================================================================
 import tensorflow as tf
 
-from lesson1.data_helper import DataHelper
+from helper.data_helper import DataHelper
 
 tf.reset_default_graph()
 

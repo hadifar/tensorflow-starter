@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from lesson1.data_helper import DataHelper
+from helper.data_helper import DataHelper
 
 train = pd.read_csv('/Users/mac/Downloads/train.csv')
 train = train.drop(columns=['ID'])

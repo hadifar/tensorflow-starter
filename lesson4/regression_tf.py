@@ -18,7 +18,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from lesson1.data_helper import DataHelper
+from helper.data_helper import DataHelper
 
 (train_data, train_labels), (test_data, test_labels) = keras.datasets.boston_housing.load_data()
 

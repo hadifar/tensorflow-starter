@@ -18,7 +18,7 @@
 import tensorflow as tf
 from tensorflow import keras
 
-from lesson1.data_helper import DataHelper
+from helper.data_helper import DataHelper
 
 (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
 x_train, x_test = x_train / 255, x_test / 255

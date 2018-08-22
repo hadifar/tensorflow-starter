@@ -17,7 +17,7 @@
 import numpy as np
 import tensorflow as tf
 
-from lesson1.data_helper import DataHelper
+from helper.data_helper import DataHelper
 
 imdb = tf.keras.datasets.imdb
 
