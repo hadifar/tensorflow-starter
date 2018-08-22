@@ -1,5 +1,6 @@
 sklearn
 pandas
 matplotlib
+pillow
 tensorflow
 tensorboard
