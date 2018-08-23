@@ -54,7 +54,7 @@ class StyleTransfer(object):
         # style_layer_w: weights for different style layers. deep layers have more weights
         self.style_layer_w = [0.5, 1.0, 1.5, 3.0, 4.0]
         self.gstep = tf.get_variable(name='global_step', initializer=0, trainable=False)  # global step
-        self.lr = 0.001
+        self.lr = 2.0
 
     def create_input(self):
         """
@@ -96,8 +96,7 @@ class StyleTransfer(object):
             Note: Don't use the coefficient 0.5 as defined in the paper.
             Use the coefficient defined in the assignment handout.
         """
-        s = P.shape[1] * P.shape[2] * P.shape[3]
-        self.content_loss = (1 / (4 * s)) * tf.reduce_sum(tf.square(F - P))
+        self.content_loss = tf.reduce_sum(tf.square(F - P)) / (4 * P.size)
 
     def _gram_matrix(self, F, N, M):
         """ Create and return the gram matrix for tensor F
@@ -106,7 +105,7 @@ class StyleTransfer(object):
         # N third dim of feature map
         # M product of first two dim of feature map
         # F feature map
-        F = tf.reshape(F, [-1, N * M])
+        F = tf.reshape(F, [M, N])
         return tf.matmul(F, F, transpose_a=True)
         ###############################
 
@@ -137,7 +136,7 @@ class StyleTransfer(object):
         """
         n_layers = len(A)
         E = [self._single_style_loss(A[i], getattr(self.vgg, self.style_layers[i])) for i in range(n_layers)]
-        self.style_loss = sum([self.style_layer_w[i] * E[i] for i in range(n_layers)])
+        self.style_loss = tf.reduce_sum([self.style_layer_w[i] * E[i] for i in range(n_layers)])
 
     def losses(self):
         with tf.variable_scope('losses'):
@@ -160,21 +159,16 @@ class StyleTransfer(object):
 
     def create_summary(self):
         with tf.name_scope('summary'):
-            tf.summary.scalar('total loss', self.total_loss)
-            tf.summary.scalar('content loss', self.content_loss)
-            tf.summary.scalar('style loss', self.style_loss)
+            tf.summary.scalar('total_loss', self.total_loss)
+            tf.summary.scalar('content_loss', self.content_loss)
+            tf.summary.scalar('style_loss', self.style_loss)
             self.summary_op = tf.summary.merge_all()
 
     def build(self):
-        print('input')
         self.create_input()
-        print('load vgg')
         self.load_vgg()
-        print('loss')
         self.losses()
-        print('optimizer')
         self.optimize()
-        print('summary')
         self.create_summary()
 
     def train(self, n_iters):

@@ -57,8 +57,8 @@ class VGG(object):
         Hint for choosing strides size:
             for small images, you probably don't want to skip any pixel
         """
-        W_, b_ = self._weights(layer_idx, layer_name)
-        W, b = tf.convert_to_tensor(W_), tf.convert_to_tensor(b_)
+        W, b = self._weights(layer_idx, layer_name)
+        W, b = tf.convert_to_tensor(W), tf.convert_to_tensor(b)
         conv2d = tf.nn.conv2d(prev_layer, W, strides=[1, 1, 1, 1], padding="SAME")
         out = tf.nn.relu(tf.nn.bias_add(conv2d, b))
         setattr(self, layer_name, out)
@@ -73,7 +73,7 @@ class VGG(object):
                         It's used to specify variable_scope.
         Hint for choosing strides and kszie: choose what you feel appropriate
         """
-        out = tf.nn.avg_pool(prev_layer, [1, 5, 5, 1], [1, 2, 2, 1], padding="SAME")
+        out = tf.nn.avg_pool(prev_layer, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
         setattr(self, layer_name, out)
 
     def load(self):
