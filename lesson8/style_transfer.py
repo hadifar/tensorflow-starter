@@ -49,8 +49,8 @@ class StyleTransfer(object):
         self.content_layer = 'conv4_2'
         self.style_layers = ['conv1_1', 'conv2_1', 'conv3_1', 'conv4_1', 'conv5_1']
         # content_w, style_w: corresponding weights for content loss and style loss
-        self.content_w = 1 / 20
-        self.style_w = 1 / 50
+        self.content_w = 0.01
+        self.style_w = 1
         # style_layer_w: weights for different style layers. deep layers have more weights
         self.style_layer_w = [0.5, 1.0, 1.5, 3.0, 4.0]
         self.gstep = tf.get_variable(name='global_step', initializer=0, trainable=False)  # global step
@@ -107,7 +107,6 @@ class StyleTransfer(object):
         # F feature map
         F = tf.reshape(F, [M, N])
         return tf.matmul(F, F, transpose_a=True)
-        ###############################
 
     def _single_style_loss(self, a, g):
         """ Calculate the style loss at a certain layer
