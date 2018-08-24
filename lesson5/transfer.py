@@ -41,23 +41,19 @@ if __name__ == '__main__':
     vgg_model = VGG19(weights='imagenet', include_top=False)
     for layer in vgg_model.layers:
         layer.trainable = False
+    vgg_model = vgg_model(inp)
 
-    vgg_out = vgg_model(inp)
-
-    x = keras.layers.Flatten(name='flatten')(vgg_out)
+    x = keras.layers.Flatten(name='flatten')(vgg_model)
     x = keras.layers.Dense(512, activation='relu', name='fc1')(x)
     x = keras.layers.Dense(512, activation='relu', name='fc2')(x)
     x = keras.layers.Dense(10, activation='softmax', name='predictions')(x)
 
-    # Create your own model
-    my_model = keras.models.Model(inputs=inp, outputs=x)
+    new_model = keras.models.Model(inputs=inp, outputs=x)
 
-    # In the summary, weights and layers from VGG part will be hidden, but they will be fit during the training
+    new_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    new_model.summary()
 
-    my_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    my_model.summary()
+    new_model.fit_generator(train_gen.flow(x_train, y_train, batch_size=64),
+                            steps_per_epoch=len(x_train) / 64, epochs=30, verbose=2)
 
-    my_model.fit_generator(train_gen.flow(x_train, y_train, batch_size=64),
-                           steps_per_epoch=len(x_train) / 64, epochs=30, verbose=2)
-
-    print(my_model.evaluate_generator(test_gen.flow(x_test, y_test, batch_size=64)))
+    print(new_model.evaluate_generator(test_gen.flow(x_test, y_test, batch_size=64)))
