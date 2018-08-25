@@ -25,7 +25,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from lesson8 import utils
+from helper import utils
 
 
 def setup():

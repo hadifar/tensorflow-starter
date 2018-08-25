@@ -19,7 +19,7 @@ import numpy as np
 import scipy.io
 import tensorflow as tf
 
-from lesson8 import utils
+from helper import utils
 
 # VGG-19 parameters file
 VGG_DOWNLOAD_LINK = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-19.mat'
@@ -29,7 +29,7 @@ EXPECTED_BYTES = 534904783
 
 class VGG(object):
     def __init__(self, input_img):
-        utils.download(VGG_DOWNLOAD_LINK, VGG_FILENAME, EXPECTED_BYTES)
+        utils.download_vgg19(VGG_DOWNLOAD_LINK, VGG_FILENAME, EXPECTED_BYTES)
         self.vgg_layers = scipy.io.loadmat(VGG_FILENAME)['layers']
         self.input_img = input_img
         self.mean_pixels = np.array([123.68, 116.779, 103.939]).reshape((1, 1, 1, 3))

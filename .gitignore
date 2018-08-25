@@ -93,7 +93,7 @@ fabric.properties
 .idea/httpRequests
 
 .idea/
-lesson5/data/
+lesson5/*.mat
 
 lesson6/assignment1/data/
 lesson6/assignment1/graphs/

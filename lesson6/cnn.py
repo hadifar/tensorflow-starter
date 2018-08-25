@@ -23,7 +23,7 @@ import time
 import numpy as np
 # tf.enable_eager_execution()
 
-from lesson6 import utils
+from helper import utils
 
 # Define paramaters for the model
 learning_rate = 0.008
@@ -111,11 +111,9 @@ logits = tf.matmul(dense1, W5) + b5
 loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=Y, logits=logits)
 loss = tf.reduce_mean(loss)
 
-
 # Step 6: define optimizer
 # using Adam Optimizer with pre-defined learning rate to minimize loss
 optimizer = tf.train.AdamOptimizer().minimize(loss)
-
 
 # Step 7: calculate accuracy with test set
 preds = tf.nn.softmax(logits)
