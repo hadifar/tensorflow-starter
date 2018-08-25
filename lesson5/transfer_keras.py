@@ -39,6 +39,7 @@ if __name__ == '__main__':
     inp = keras.layers.Input(shape=(32, 32, 3), name='image_input')
 
     vgg_model = VGG19(weights='imagenet', include_top=False)
+    # vgg_model.trainable = False
     for layer in vgg_model.layers:
         layer.trainable = False
     vgg_model = vgg_model(inp)
