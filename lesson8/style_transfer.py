@@ -125,8 +125,8 @@ class StyleTransfer(object):
         M = a.shape[1] * a.shape[2]
         A = self._gram_matrix(a, N=N, M=M)
         G = self._gram_matrix(g, N=N, M=M)
-        coeff = 1 / (4 * (N ** 2) * (M ** 2))
-        return coeff * tf.reduce_sum(tf.square(G - A))
+
+        return tf.reduce_sum(tf.square(G - A))/(4 * (N ** 2) * (M ** 2))
 
     def _style_loss(self, A):
         """ Calculate the total style loss as a weighted sum

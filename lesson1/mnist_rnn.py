@@ -15,9 +15,9 @@
 # limitations under the License.
 # ==============================================================================
 import tensorflow as tf
+from helper.general_helper import number_of_params
 from tensorflow import keras
 
-from helper.general_helper import number_of_params
 from helper.data_helper import DataHelper
 
 (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
@@ -44,13 +44,12 @@ biases = tf.Variable(tf.ones([n_classes]) / 10)
 
 rnn_cell = tf.contrib.rnn.BasicRNNCell(n_hidden)
 outputs, states = tf.nn.dynamic_rnn(rnn_cell, inputs=x, dtype=tf.float32)
-# output.shape [batch_size, 28, 128]
-# states.shape [batch_size, 128]
 
 output = tf.reshape(tf.split(outputs, 28, axis=1, name='split')[-1], [-1, n_hidden])
-pred = tf.matmul(output, weights) + biases
+logits = tf.matmul(output, weights) + biases
+pred = tf.nn.softmax(logits)
 
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=pred))
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=logits))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
 correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
