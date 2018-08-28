@@ -183,20 +183,3 @@ if __name__ == '__main__':
     charnn.build_graph()
     charnn.train(1)
     charnn.inference()
-
-    # train_data = tf.data.Dataset.from_tensor_slices(train)
-    # train_data = train_data.shuffle(10000)  # if you want to shuffle your data
-    # train_data = train_data.batch(batch_size)
-    #
-    # # create testing Dataset and batch it
-    # test_data = tf.data.Dataset.from_tensor_slices(test)
-    # test_data = test_data.shuffle(10000)
-    # test_data = test_data.batch(batch_size)
-    #
-    # # create one iterator and initialize it with different datasets
-    # iterator = tf.data.Iterator.from_structure(train_data.output_types,
-    #                                            train_data.output_shapes)
-    # img, label = iterator.get_next()
-    #
-    # train_init = iterator.make_initializer(train_data)  # initializer for train_data
-    # test_init = iterator.make_initializer(test_data)  # initializer for train_data
