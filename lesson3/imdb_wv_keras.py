@@ -22,7 +22,7 @@ imdb = tf.keras.datasets.imdb
 (train_data, train_labels), (test_data, test_labels) = imdb.load_data(num_words=10000)
 
 train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data, maxlen=256)
-test_data = tf.keras.preprocessing.sequence.pad_sequences(test_data , maxlen=256)
+test_data = tf.keras.preprocessing.sequence.pad_sequences(test_data, maxlen=256)
 
 val_data = train_data[:10000]
 val_label = train_labels[:10000]

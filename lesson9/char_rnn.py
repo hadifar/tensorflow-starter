@@ -67,12 +67,11 @@ class CharRNN(object):
 
     def _create_rnn(self):
         with tf.name_scope('RNN'):
-            # self.embed
-            cell = [tf.nn.rnn_cell.GRUCell(self.rnn_size) for _ in range(self.layer_size)]
+            cell = [tf.nn.rnn_cell.BasicLSTMCell(self.rnn_size)] * self.layer_size
             # tf.nn.rnn_cell.DropoutWrapper(rnn_cell,)
             rnn_cell = tf.nn.rnn_cell.MultiRNNCell(cell)
-
-            self.init_state = rnn_cell.zero_state(self.batch_size, tf.float32)
+            print(self.inp.shape)
+            self.init_state = rnn_cell.zero_state(tf.shape(self.inp)[0], tf.float32)
 
             self.rnn_outputs, self.final_state = tf.nn.dynamic_rnn(rnn_cell, self.embed,
                                                                    initial_state=self.init_state,
@@ -80,7 +79,7 @@ class CharRNN(object):
             seq_output = tf.concat(self.rnn_outputs, axis=1)
             x = tf.reshape(seq_output, shape=[-1, self.rnn_size])
 
-            w = tf.Variable(initial_value=tf.truncated_normal(shape=[self.rnn_size, self.num_classes], stddev=1.0))
+            w = tf.Variable(initial_value=tf.truncated_normal(shape=[self.rnn_size, self.num_classes]))
             b = tf.Variable(tf.zeros(self.num_classes))
             self.logits = tf.nn.xw_plus_b(x, w, b)
             self.prediction = tf.nn.softmax(logits=self.logits, name='predictions')
@@ -119,7 +118,7 @@ class CharRNN(object):
                     writer.add_summary(summary, global_step=step)
                     total_loss += batch_loss
                     if (i + 1) % 200 == 0:
-                        print('Average loss at step {}: {:5.1f}'.format(i, total_loss / 200))
+                        print('Average loss at step {}: {:5.1f}'.format(i + 1, total_loss / 200))
                         total_loss = 0.0
 
                 except tf.errors.OutOfRangeError:
@@ -133,7 +132,6 @@ class CharRNN(object):
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-            sess.run(self.iterator.initializer)
 
             samples = [c for c in start]
             new_state = sess.run(self.init_state)
@@ -148,8 +146,7 @@ class CharRNN(object):
                     self.inp: x,
                     self.init_state: new_state
                 }
-                preds, new_state = sess.run(
-                    [self.prediction, self.final_state], feed_dict=feed_dict)
+                preds, new_state = sess.run([self.prediction, self.final_state], feed_dict=feed_dict)
                 c = utils.pick_top_n(preds, converter.vocab_size)
                 samples.append(c)
 
@@ -175,7 +172,7 @@ if __name__ == '__main__':
 
     dataset = tf.data.Dataset.from_generator(gen, (tf.int32, tf.int32),
                                              (tf.TensorShape([None, None]),
-                                              tf.TensorShape([FLAGS.BATCH_SIZE, FLAGS.SEQ_LEN])))
+                                              tf.TensorShape([None, None])))
     dataset = dataset.prefetch(2)
 
     charnn = CharRNN(dataset, FLAGS.CHAR_SIZE,
