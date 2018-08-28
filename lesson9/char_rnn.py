@@ -132,6 +132,7 @@ class CharRNN(object):
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
+            sess.run(self.iterator.initializer)
 
             samples = [c for c in start]
             new_state = sess.run(self.init_state)
