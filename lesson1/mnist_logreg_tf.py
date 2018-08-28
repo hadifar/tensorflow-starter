@@ -69,19 +69,16 @@ b = tf.get_variable(name='bias', initializer=tf.zeros([10]))
 # Step 4: build model
 # the model that returns the logits.
 # this logits will be later passed through softmax layer
-logits = tf.matmul(img, w) + b
-
+logits = tf.nn.xw_plus_b(img, w, b)
 
 # Step 5: define loss function
 # use cross entropy of softmax of logits as the loss function
 loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=label, logits=logits)
 loss = tf.reduce_mean(loss)
 
-
 # Step 6: define optimizer
 # using Adamn Optimizer with pre-defined learning rate to minimize loss
 optimizer = tf.train.AdamOptimizer().minimize(loss)
-
 
 # Step 7: calculate accuracy with test set
 preds = tf.nn.softmax(logits)

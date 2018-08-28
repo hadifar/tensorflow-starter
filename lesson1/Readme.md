@@ -7,3 +7,4 @@ Basic examples with Mnist and Cifar10 in Tensorflow and Keras including:
 - Mnist with Dense layer in Keras
 - Mnist with Dense layer in Tensorflow
 - Mnist with LSTM layer in Tensorflow
+- Mnist with Logistic regression in Tensorflow
