@@ -17,17 +17,17 @@
 import numpy as np
 import tensorflow.keras as keras
 
-text = open('../lesson9/text.txt').read()
+text = open('../lesson7/data/all_poem.txt').read()
 
 unique = sorted(set(text))
-
+vocab_size = len(unique)
 # creating a mapping from unique characters to indices
 char2idx = {u: i for i, u in enumerate(unique)}
 idx2char = {i: u for i, u in enumerate(unique)}
 
 input_text = []
 target_text = []
-max_length = 40
+max_length = 50
 batch_size = 32
 
 for f in range(0, len(text) - max_length, max_length):
@@ -46,34 +46,33 @@ target_text = target_text[:stateful_size]
 
 
 class MyModel(keras.Sequential):
-    def __init__(self, vocab_size=10000, batch_size=128, embed_size=100, rnn_dim=100, seq_len=40):
+    def __init__(self, vocab_size=vocab_size, batch_siz3=128, embed_size=100, rnn_dim=100, seq_len=40):
         super(MyModel, self).__init__()
 
-        self.embed = keras.layers.Embedding(vocab_size, embed_size)
+        self.add(keras.layers.Embedding(vocab_size, embed_size, batch_input_shape=(batch_siz3, None)))
 
-        self.gru = keras.layers.GRU(rnn_dim, stateful=True, return_sequences=True)
+        self.add(keras.layers.GRU(rnn_dim, stateful=True, return_sequences=True))
 
-        self.time_distributed = keras.layers.TimeDistributed(keras.layers.Dense(vocab_size, activation='softmax'))
-
-    def call(self, inputs):
-        x = self.embed(inputs)
-        x = self.gru(x)
-        x = self.time_distributed(x)
-        return x
+        self.add(keras.layers.TimeDistributed(keras.layers.Dense(vocab_size, activation='softmax')))
 
 
-def create_model():
-    inp = keras.layers.Input((40,), batch_size=batch_size)
-    out = MyModel()(inp)
-    return keras.Model(inp, out)
+# def create_model():
+# inp = keras.layers.Input((40,), batch_size=batch_size)
+# out = MyModel()(
+# return keras.Model(inp, out)
 
 
-model = create_model()
+model = MyModel(batch_siz3=batch_size)
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-model.fit(x=input_text, y=np.expand_dims(target_text, 2), shuffle=False, epochs=1, batch_size=batch_size)
+model.fit(x=input_text, y=np.expand_dims(target_text, 2), shuffle=False, epochs=1000, batch_size=batch_size)
 
-num_generate = 1000
+config = model.get_config()
+config[0]['config']['batch_input_shape'] = (1, None)
+sample_model = keras.Sequential.from_config(config)
+sample_model.trainable = False
+
+num_generate = 25
 
 # You can change the start string to experiment
 start_string = 'ر'
@@ -89,13 +88,15 @@ text_generated = ''
 # experiment to find the best setting
 temperature = 1.0
 
+ids = [i for i in range(vocab_size)]
 # hidden state shape == (batch_size, number of rnn units); here batch size == 1
 for i in range(num_generate):
-    predictions = model.predict(input_eval)
+    predictions = sample_model.predict(input_eval)
 
     # using a multinomial distribution to predict the word returned by the model
-    predictions = predictions / temperature
-    predicted_id = np.random.multinomial(predictions, pvals=[1 / 10000] * 10000)[0][0].numpy()
+    # predictions = predictions / temperature
+    # np.random.choice([i for i in range(1001)], p=predictions[0][0])
+    predicted_id = np.random.choice(ids, p=predictions[0][0])
 
     # We pass the predicted word as the next input to the model
     # along with the previous hidden state
