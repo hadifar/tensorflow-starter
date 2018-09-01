@@ -25,22 +25,21 @@ tf.reset_default_graph()
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('INPUT_FILE', '../lesson9/text.txt', 'input file ')
+tf.flags.DEFINE_string('INPUT_FILE', '../lesson7/data/all_poem.txt', 'input file ')
 tf.flags.DEFINE_string('SAVED_FILE', '../lesson9/', 'saved text file directory ')
 tf.flags.DEFINE_string('CONVERTER_PATH', '../lesson9/converter.pkl', 'converter path')
 tf.flags.DEFINE_integer('BATCH_SIZE', 32, 'default batch size')
-tf.flags.DEFINE_integer('SEQ_LEN', 20, 'sequence length ')
-tf.flags.DEFINE_integer('CHAR_SIZE', 40, 'unique char')
-tf.flags.DEFINE_integer('EMBED_SIZE', 50, 'embedding size')
-tf.flags.DEFINE_integer('RNN_SIZE', 50, 'recurrent hidden size')
+tf.flags.DEFINE_integer('SEQ_LEN', 50, 'sequence length ')
+tf.flags.DEFINE_integer('CHAR_SIZE', 190, 'unique char')
+tf.flags.DEFINE_integer('EMBED_SIZE', 128, 'embedding size')
+tf.flags.DEFINE_integer('RNN_SIZE', 128, 'recurrent hidden size')
 tf.flags.DEFINE_integer('LAYER_SIZE', 2, 'number of stacked layer in RNN')
-tf.flags.DEFINE_float('LEARNING_RATE', 0.001, 'learning rate')
+tf.flags.DEFINE_float('LEARNING_RATE', 0.002, 'learning rate')
 
 
 class CharRNN(object):
 
-    def __init__(self, dataset, num_classes, emb_size, rnn_size, layer_size, batch_size, seq_len, lr):
-        self.dataset = dataset
+    def __init__(self, num_classes, emb_size, rnn_size, layer_size, batch_size, seq_len, lr):
         self.num_classes = num_classes
         self.emb_size = emb_size
         self.rnn_size = rnn_size
@@ -52,8 +51,22 @@ class CharRNN(object):
 
     def _create_input(self):
         with tf.name_scope('data'):
-            self.iterator = dataset.make_initializable_iterator()
+            train_data = tf.data.Dataset.from_generator(gen, (tf.int32, tf.int32),
+                                                        (tf.TensorShape([None, None]),
+                                                         tf.TensorShape([None, None])))
+            train_data = train_data.prefetch(2)
+
+            x = np.random.randint(1, self.num_classes, [1, self.seq_len], dtype=np.int32)
+            y = np.random.randint(1, self.num_classes, [1, self.seq_len], dtype=np.int32)
+            test_data = tf.data.Dataset.from_tensor_slices((x, y))
+            test_data = test_data.batch(1)
+
+            self.iterator = tf.data.Iterator.from_structure(train_data.output_types,
+                                                            train_data.output_shapes)
+
             self.inp, self.target = self.iterator.get_next()
+            self.train_init = self.iterator.make_initializer(train_data)
+            self.test_init = self.iterator.make_initializer(test_data)
 
     def _create_model(self):
         self._create_embedding()
@@ -70,7 +83,7 @@ class CharRNN(object):
             cell = [tf.nn.rnn_cell.BasicLSTMCell(self.rnn_size)] * self.layer_size
             # tf.nn.rnn_cell.DropoutWrapper(rnn_cell,)
             rnn_cell = tf.nn.rnn_cell.MultiRNNCell(cell)
-            print(self.inp.shape)
+
             self.init_state = rnn_cell.zero_state(tf.shape(self.inp)[0], tf.float32)
 
             self.rnn_outputs, self.final_state = tf.nn.dynamic_rnn(rnn_cell, self.embed,
@@ -78,7 +91,6 @@ class CharRNN(object):
                                                                    dtype=tf.float32)
             seq_output = tf.concat(self.rnn_outputs, axis=1)
             x = tf.reshape(seq_output, shape=[-1, self.rnn_size])
-
             w = tf.Variable(initial_value=tf.truncated_normal(shape=[self.rnn_size, self.num_classes]))
             b = tf.Variable(tf.zeros(self.num_classes))
             self.logits = tf.nn.xw_plus_b(x, w, b)
@@ -104,9 +116,8 @@ class CharRNN(object):
     def train(self, training_step):
 
         with tf.Session() as sess:
-            # sess = tf_debug.TensorBoardDebugWrapperSession(sess, "localhost:6007")
             sess.run(tf.global_variables_initializer())
-            sess.run(self.iterator.initializer)
+            sess.run(self.train_init)
 
             total_loss = 0
             writer = tf.summary.FileWriter('graphs/language_model/lr_' + str(self.lr), sess.graph)
@@ -132,23 +143,26 @@ class CharRNN(object):
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-            sess.run(self.iterator.initializer)
-
+            sess.run(self.test_init)
             samples = [c for c in start]
             new_state = sess.run(self.init_state)
             preds = np.ones((converter.vocab_size,))
             c = utils.pick_top_n(preds, converter.vocab_size)
             samples.append(c)
 
+            input_eval = np.zeros([1, self.seq_len])
+            y = np.zeros([1, self.seq_len])
             for i in range(1000):
-                x = np.zeros((1, 1))
-                x[0, 0] = c
+                input_eval = np.roll(input_eval, 1, axis=1)
+                input_eval[0][-1] = c
                 feed_dict = {
-                    self.inp: x,
+                    self.inp: input_eval,
+                    self.target: y,
                     self.init_state: new_state
                 }
+
                 preds, new_state = sess.run([self.prediction, self.final_state], feed_dict=feed_dict)
-                c = utils.pick_top_n(preds, converter.vocab_size)
+                c = utils.pick_top_n(preds[-1], converter.vocab_size)
                 samples.append(c)
 
             samples = np.array(samples)
@@ -171,16 +185,12 @@ if __name__ == '__main__':
                                      unique_char=FLAGS.CHAR_SIZE)
 
 
-    dataset = tf.data.Dataset.from_generator(gen, (tf.int32, tf.int32),
-                                             (tf.TensorShape([None, None]),
-                                              tf.TensorShape([None, None])))
-    dataset = dataset.prefetch(2)
-
-    charnn = CharRNN(dataset, FLAGS.CHAR_SIZE,
+    charnn = CharRNN(FLAGS.CHAR_SIZE,
                      FLAGS.EMBED_SIZE, FLAGS.RNN_SIZE,
                      FLAGS.LAYER_SIZE, FLAGS.BATCH_SIZE,
                      FLAGS.SEQ_LEN, FLAGS.LEARNING_RATE)
 
     charnn.build_graph()
-    charnn.train(1)
+    charnn.train(1000000)
+    print(50 * '-')
     charnn.inference()

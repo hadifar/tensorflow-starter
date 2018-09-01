@@ -85,9 +85,10 @@ def batch_generator(input_file, saved_path, batch_siz, seq_len, unique_char):
     with codecs.open(input_file, encoding='utf-8') as f:
         text = f.read()
 
-    Reader = TextReader(text, unique_char)
+    Reader = TextReader(text)
     Reader.save_to_file(os.path.join(saved_path, 'converter.pkl'))
     arr = Reader.text_to_arr(text)
+    # print(Reader.vocab_size)
 
     batch_size = batch_siz * seq_len
     num_batches = len(arr) // batch_size
