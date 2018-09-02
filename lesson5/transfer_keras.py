@@ -50,7 +50,6 @@ if __name__ == '__main__':
     x = keras.layers.Dense(10, activation='softmax', name='predictions')(x)
 
     new_model = keras.models.Model(inputs=inp, outputs=x)
-
     new_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     new_model.summary()
 
