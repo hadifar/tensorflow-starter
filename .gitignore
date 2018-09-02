@@ -104,6 +104,7 @@ lesson7/default
 lesson8/data/
 lesson8/*.mat
 
+lesson9/data
 lesson9/graphs
 lesson9/*.pkl
 lesson9/*.txt
