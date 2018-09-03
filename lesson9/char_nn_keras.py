@@ -17,7 +17,7 @@
 import numpy as np
 import tensorflow.keras as keras
 
-text = open('../lesson9/text.txt').read()
+text = open('../lesson9/data/test.txt').read()
 
 unique = sorted(set(text))
 len_of_char = len(unique)
@@ -57,17 +57,17 @@ model.compile(optimizer=keras.optimizers.Nadam(lr=1), loss='sparse_categorical_c
 print(model.summary())
 print(50 * '-')
 
-model.fit(x=input_text, y=np.expand_dims(target_text, 2), epochs=100, batch_size=batch_size)
+model.fit(x=input_text, y=np.expand_dims(target_text, 2), epochs=1, batch_size=batch_size)
 
 num_generate = 1000
 
 # You can change the start string to experiment
-start_string = 'ر'
+start_string = 'به نام خدا'
 # converting our start string to numbers(vectorizing!)
-# input_eval = [ for s in start_string]
-# input_eval = np.expand_dims(input_eval, 0)
 input_eval = np.zeros([max_length])
-input_eval[-1] = char2idx[start_string]
+input_eval[0:len(start_string)] = [char2idx[s] for s in start_string]
+input_eval = np.expand_dims(input_eval, 0)
+
 # empty string to store our results
 text_generated = ''
 
@@ -77,10 +77,10 @@ ids = [i for i in range(len_of_char)]
 for i in range(num_generate):
     predictions = model.predict(input_eval)
 
-    predicted_id = np.random.multinomial(1, predictions[0][0], 1).argmax()
+    predicted_id = np.random.choice(list(char2idx.values()), 1, p=predictions[0][0])[0]
 
-    input_eval = np.roll(input_eval, 1)
-    input_eval[-1] = predicted_id
+    input_eval = input_eval[1:] + predicted_id
+    # input_eval[0] = predicted_id
 
     text_generated += idx2char[predicted_id]
 

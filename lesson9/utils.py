@@ -30,6 +30,8 @@ class TextReader(object):
         else:
             vocab = set(text)
 
+            print(len(vocab))
+
             vocab_count = {}
             for word in vocab:
                 vocab_count[word] = 0
@@ -81,11 +83,11 @@ class TextReader(object):
             pickle.dump(self.vocab, f)
 
 
-def batch_generator(input_file, saved_path, batch_siz, seq_len, unique_char):
+def batch_generator(input_file, saved_path, batch_siz, seq_len, num_classes=5000):
     with codecs.open(input_file, encoding='utf-8') as f:
         text = f.read()
 
-    Reader = TextReader(text)
+    Reader = TextReader(text, max_vocab=num_classes)
     Reader.save_to_file(os.path.join(saved_path, 'converter.pkl'))
     arr = Reader.text_to_arr(text)
     # print(Reader.vocab_size)

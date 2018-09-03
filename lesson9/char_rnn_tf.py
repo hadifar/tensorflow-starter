@@ -25,12 +25,12 @@ tf.reset_default_graph()
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('INPUT_FILE', '../lesson7/data/all_poem.txt', 'input file ')
+tf.flags.DEFINE_string('INPUT_FILE', '../lesson9/data/ferdosi.txt', 'input file ')
 tf.flags.DEFINE_string('SAVED_FILE', '../lesson9/', 'saved text file directory ')
 tf.flags.DEFINE_string('CONVERTER_PATH', '../lesson9/converter.pkl', 'converter path')
 tf.flags.DEFINE_integer('BATCH_SIZE', 32, 'default batch size')
-tf.flags.DEFINE_integer('SEQ_LEN', 50, 'sequence length ')
-tf.flags.DEFINE_integer('CHAR_SIZE', 190, 'unique char')
+tf.flags.DEFINE_integer('SEQ_LEN', 40, 'sequence length ')
+tf.flags.DEFINE_integer('NUM_CLASSES', 48, 'unique char (different classes)')
 tf.flags.DEFINE_integer('EMBED_SIZE', 128, 'embedding size')
 tf.flags.DEFINE_integer('RNN_SIZE', 128, 'recurrent hidden size')
 tf.flags.DEFINE_integer('LAYER_SIZE', 2, 'number of stacked layer in RNN')
@@ -139,22 +139,21 @@ class CharRNN(object):
 
     def inference(self):
         converter = utils.TextReader(filename=FLAGS.CONVERTER_PATH)
-        start = converter.text_to_arr('')
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             sess.run(self.test_init)
-            samples = [c for c in start]
+            samples = []
             new_state = sess.run(self.init_state)
             preds = np.ones((converter.vocab_size,))
             c = utils.pick_top_n(preds, converter.vocab_size)
             samples.append(c)
 
-            input_eval = np.zeros([1, self.seq_len])
-            y = np.zeros([1, self.seq_len])
+            input_eval = np.zeros([1, 1])
+            y = np.zeros([1, 1])
+
             for i in range(1000):
-                input_eval = np.roll(input_eval, 1, axis=1)
-                input_eval[0][-1] = c
+                input_eval[0][0] = c
                 feed_dict = {
                     self.inp: input_eval,
                     self.target: y,
@@ -162,7 +161,8 @@ class CharRNN(object):
                 }
 
                 preds, new_state = sess.run([self.prediction, self.final_state], feed_dict=feed_dict)
-                c = utils.pick_top_n(preds[-1], converter.vocab_size)
+                print(sess.run([self.inp]))
+                c = utils.pick_top_n(preds, converter.vocab_size)
                 samples.append(c)
 
             samples = np.array(samples)
@@ -182,15 +182,15 @@ if __name__ == '__main__':
                                      saved_path=FLAGS.SAVED_FILE,
                                      batch_siz=FLAGS.BATCH_SIZE,
                                      seq_len=FLAGS.SEQ_LEN,
-                                     unique_char=FLAGS.CHAR_SIZE)
+                                     num_classes=FLAGS.NUM_CLASSES)
 
 
-    charnn = CharRNN(FLAGS.CHAR_SIZE,
+    charnn = CharRNN(FLAGS.NUM_CLASSES,
                      FLAGS.EMBED_SIZE, FLAGS.RNN_SIZE,
                      FLAGS.LAYER_SIZE, FLAGS.BATCH_SIZE,
                      FLAGS.SEQ_LEN, FLAGS.LEARNING_RATE)
 
     charnn.build_graph()
-    charnn.train(1000000)
+    charnn.train(1)
     print(50 * '-')
     charnn.inference()
