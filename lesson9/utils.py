@@ -26,11 +26,8 @@ class TextReader(object):
         if filename is not None:
             with open(filename, 'rb') as f:
                 self.vocab = pickle.load(f)
-
         else:
             vocab = set(text)
-
-            print(len(vocab))
 
             vocab_count = {}
             for word in vocab:
@@ -90,20 +87,12 @@ def batch_generator(input_file, saved_path, batch_siz, seq_len, num_classes=5000
     Reader = TextReader(text, max_vocab=num_classes)
     Reader.save_to_file(os.path.join(saved_path, 'converter.pkl'))
     arr = Reader.text_to_arr(text)
-    # print(Reader.vocab_size)
-
-    batch_size = batch_siz * seq_len
-    num_batches = len(arr) // batch_size
-    arr = arr[:batch_size * num_batches]
-    arr = arr.reshape((batch_siz, -1))
-
-    while True:
-        np.random.shuffle(arr)
-        for n in range(0, arr.shape[1], seq_len):
-            x = arr[:, n:n + seq_len]
-            y = np.zeros_like(x)
-            y[:, :-1], y[:, -1] = x[:, 1:], x[:, 0]
-            yield x, y
+    sentences = []
+    next_chars = []
+    for i in range(0, len(arr) - seq_len, 3):
+        sentences.append(arr[i: i + seq_len])
+        next_chars.append(arr[i + seq_len])
+    return np.array(sentences, dtype=np.int32), np.expand_dims(np.array(next_chars, dtype=np.int32), axis=1)
 
 
 def pick_top_n(preds, vocab_size, top_n=5):
