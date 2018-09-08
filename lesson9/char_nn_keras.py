@@ -18,7 +18,7 @@ import random
 
 import numpy as np
 import tensorflow.keras as keras
-from tensorflow.keras.callbacks import LambdaCallback
+
 
 # load data (raw text file)
 ################################################################################
@@ -87,8 +87,8 @@ def on_epoch_end(epoch, _):
                 x_pred[0, t, char2idx[char]] = 1.
 
             preds = model.predict(x_pred, verbose=0)[0]
-            next_index = sample(preds, diversity)
-            next_char = idx2char[next_index]
+            pred_id = sample(preds, diversity)
+            next_char = idx2char[pred_id]
 
             generated += next_char
             sentence = sentence[1:] + next_char
@@ -124,5 +124,5 @@ model.compile(optimizer=keras.optimizers.RMSprop(0.01),
               metrics=['accuracy'])
 
 print(model.summary())
-print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
+print_callback = keras.callbacks.LambdaCallback(on_epoch_end=on_epoch_end)
 model.fit(x=x, y=y, epochs=60, batch_size=128, callbacks=[print_callback])
