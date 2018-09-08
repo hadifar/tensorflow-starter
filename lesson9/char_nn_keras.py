@@ -14,74 +14,115 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import random
+
 import numpy as np
 import tensorflow.keras as keras
+from tensorflow.keras.callbacks import LambdaCallback
 
-text = open('../lesson9/data/test.txt').read()
+# load data (raw text file)
+################################################################################
+################################################################################
 
-unique = sorted(set(text))
-len_of_char = len(unique)
-# creating a mapping from unique characters to indices
-char2idx = {u: i for i, u in enumerate(unique)}
-idx2char = {i: u for i, u in enumerate(unique)}
+path = '../lesson9/data/test.txt'
+with open(path, encoding='utf-8') as f:
+    text = f.read().lower()
+print('corpus length:', len(text))
 
-input_text = []
-target_text = []
-max_length = 60
-batch_size = 32
+# create two dictionaries: (index to id) & (id to index)
+################################################################################
+################################################################################
 
-for f in range(0, len(text) - max_length, max_length):
-    inps = text[f:f + max_length]
-    targ = text[f + 1:f + 1 + max_length]
+chars = sorted(list(set(text)))
+len_of_char = len(chars)
+print('total chars:', len(chars))
+char2idx = dict((c, i) for i, c in enumerate(chars))
+idx2char = dict((i, c) for i, c in enumerate(chars))
 
-    input_text.append([char2idx[i] for i in inps])
-    target_text.append([char2idx[t] for t in targ])
+# convert each character in corpus to id
+################################################################################
+################################################################################
 
-input_text = np.array(input_text)
-target_text = np.array(target_text)
+max_length = 40
+step = 3
+sentences = []
+next_chars = []
+for i in range(0, len(text) - max_length, step):
+    sentences.append(text[i: i + max_length])
+    next_chars.append(text[i + max_length])
+print('nb sequences:', len(sentences))
+
+# create proper vector for training model
+################################################################################
+################################################################################
+print('Vectorization...')
+x = np.zeros((len(sentences), max_length, len(chars)), dtype=np.bool)
+y = np.zeros((len(sentences)))
+for i, sentence in enumerate(sentences):
+    for t, char in enumerate(sentence):
+        x[i, t, char2idx[char]] = 1
+    y[i] = char2idx[next_chars[i]]
 
 
-class MyModel(keras.Sequential):
-    def __init__(self, vocab=len_of_char, embed_size=100, rnn_dim=100):
-        super(MyModel, self).__init__()
+# two helper functions to print generated text at the end of each epoch
+################################################################################
+################################################################################
+def on_epoch_end(epoch, _):
+    # Function invoked at end of each epoch. Prints generated text.
+    print()
+    print('----- Generating text after Epoch: %d' % epoch)
 
-        self.add(keras.layers.Embedding(vocab, embed_size))
+    start_index = random.randint(0, len(text) - max_length - 1)
+    for diversity in [1.0]:
+        print('----- diversity:', diversity)
 
-        self.add(keras.layers.GRU(rnn_dim, return_sequences=True))
+        generated = ''
+        sentence = text[start_index: start_index + max_length]
+        generated += sentence
+        print('----- Generating with seed: "' + sentence + '"')
 
-        self.add(keras.layers.Dense(vocab, activation='softmax'))
+        for i in range(400):
+            x_pred = np.zeros((1, max_length, len(chars)))
+            for t, char in enumerate(sentence):
+                x_pred[0, t, char2idx[char]] = 1.
+
+            preds = model.predict(x_pred, verbose=0)[0]
+            next_index = sample(preds, diversity)
+            next_char = idx2char[next_index]
+
+            generated += next_char
+            sentence = sentence[1:] + next_char
+
+        print()
 
 
-model = MyModel()
-model.compile(optimizer=keras.optimizers.Nadam(lr=1), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+def sample(preds, temperature=1.0):
+    # helper function to sample an index from a probability array
+    preds = np.asarray(preds).astype('float64')
+    preds = np.log(preds) / temperature
+    exp_preds = np.exp(preds)
+    preds = exp_preds / np.sum(exp_preds)
+    probas = np.random.multinomial(1, preds, 1)
+    return np.argmax(probas)
+
+
+# Define simple GRU model for generating text
+# In case of using CPU replace the CuDNNGRU with GRU
+################################################################################
+################################################################################
+
+model = keras.Sequential()
+model.add(keras.layers.CuDNNGRU(256, input_shape=(max_length, len_of_char)))
+model.add(keras.layers.Dense(len_of_char, activation='softmax'))
+
+# Create graph and train the model for 60 epoch
+################################################################################
+################################################################################
+
+model.compile(optimizer=keras.optimizers.RMSprop(0.01),
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
 print(model.summary())
-print(50 * '-')
-
-model.fit(x=input_text, y=np.expand_dims(target_text, 2), epochs=1, batch_size=batch_size)
-
-num_generate = 1000
-
-# You can change the start string to experiment
-start_string = 'به نام خدا'
-# converting our start string to numbers(vectorizing!)
-input_eval = np.zeros([max_length])
-input_eval[0:len(start_string)] = [char2idx[s] for s in start_string]
-input_eval = np.expand_dims(input_eval, 0)
-
-# empty string to store our results
-text_generated = ''
-
-model.reset_states()
-
-ids = [i for i in range(len_of_char)]
-for i in range(num_generate):
-    predictions = model.predict(input_eval)
-
-    predicted_id = np.random.choice(list(char2idx.values()), 1, p=predictions[0][0])[0]
-
-    input_eval = input_eval[1:] + predicted_id
-    # input_eval[0] = predicted_id
-
-    text_generated += idx2char[predicted_id]
-
-print(start_string + text_generated)
+print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
+model.fit(x=x, y=y, epochs=60, batch_size=128, callbacks=[print_callback])
