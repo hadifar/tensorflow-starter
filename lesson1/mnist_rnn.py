@@ -15,7 +15,6 @@
 # limitations under the License.
 # ==============================================================================
 import tensorflow as tf
-from helper.general_helper import number_of_params
 from tensorflow import keras
 
 from helper.data_helper import DataHelper
@@ -57,8 +56,6 @@ accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 init = tf.global_variables_initializer()
 
-print(50 * '-')
-number_of_params()
 print(50 * '-')
 
 with tf.Session() as sess:
