@@ -19,8 +19,6 @@ import tensorflow as tf
 
 from lesson9 import utils
 
-# from tensorflow.python import debug as tf_debug
-
 tf.reset_default_graph()
 
 FLAGS = tf.flags.FLAGS
@@ -28,7 +26,7 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('INPUT_FILE', '../lesson9/data/test.txt', 'input file ')
 tf.flags.DEFINE_string('SAVED_FILE', '../lesson9/', 'saved text file directory ')
 tf.flags.DEFINE_string('CONVERTER_PATH', '../lesson9/converter.pkl', 'converter path')
-tf.flags.DEFINE_integer('BATCH_SIZE', 32, 'default batch size')
+tf.flags.DEFINE_integer('BATCH_SIZE', 128, 'default batch size')
 tf.flags.DEFINE_integer('SEQ_LEN', 40, 'sequence length ')
 tf.flags.DEFINE_integer('NUM_CLASSES', 40, 'unique char (different classes)')  # 48
 tf.flags.DEFINE_integer('EMBED_SIZE', 128, 'embedding size')
@@ -49,7 +47,8 @@ class CharRNN(object):
         self.lr = lr
         self.global_step = tf.get_variable(name='global_step', initializer=0, trainable=False)
 
-    def _gen(self):
+    @staticmethod
+    def _gen():
         return utils.batch_generator(input_file=FLAGS.INPUT_FILE,
                                      saved_path=FLAGS.SAVED_FILE,
                                      batch_siz=FLAGS.BATCH_SIZE,
@@ -76,39 +75,32 @@ class CharRNN(object):
             self.test_init = self.iterator.make_initializer(test_data)
 
     def _create_model(self):
-        self._create_embedding()
-        self._create_rnn()
-
-    def _create_embedding(self):
-        with tf.name_scope('embedding'):
-            embed_matrix = tf.get_variable(name='embedding',
-                                           initializer=tf.truncated_normal([self.num_classes, self.emb_size]))
-            self.embed = tf.nn.embedding_lookup(embed_matrix, self.inp)
-
-    def _create_rnn(self):
         with tf.name_scope('RNN'):
+            x = tf.one_hot(self.inp, depth=self.num_classes)
+
             cell = [tf.nn.rnn_cell.BasicLSTMCell(self.rnn_size)] * self.layer_size
-            # tf.nn.rnn_cell.DropoutWrapper(rnn_cell,)
+
             rnn_cell = tf.nn.rnn_cell.MultiRNNCell(cell)
 
             self.init_state = rnn_cell.zero_state(tf.shape(self.inp)[0], tf.float32)
 
-            self.rnn_outputs, self.final_state = tf.nn.dynamic_rnn(rnn_cell, self.embed,
+            self.rnn_outputs, self.final_state = tf.nn.dynamic_rnn(rnn_cell, x,
                                                                    initial_state=self.init_state,
                                                                    dtype=tf.float32)
-            # seq_output = tf.concat(self.rnn_outputs, axis=1)
-            x = self.final_state[-1].h
+
+            output = self.final_state[-1].h
+            # x = self.rnn_outputs[:, tf.shape(self.rnn_outputs)[1], :]
             w = tf.Variable(initial_value=tf.truncated_normal(shape=[self.rnn_size, self.num_classes]))
             b = tf.Variable(tf.zeros(self.num_classes))
-            self.logits = tf.nn.xw_plus_b(x, w, b)
+            self.logits = tf.nn.xw_plus_b(output, w, b)
             self.prediction = tf.nn.softmax(logits=self.logits, name='predictions')
 
     def _create_loss(self):
         with tf.name_scope('loss'):
-            y_one_hot = tf.one_hot(self.target, self.num_classes)
-            y_reshaped = tf.reshape(y_one_hot, shape=tf.shape(self.logits))
+            target_new = tf.reshape(self.target, [tf.shape(self.target)[0]])
+            y_one_hot = tf.one_hot(target_new, self.num_classes)
             self.loss = tf.reduce_mean(
-                tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_reshaped, logits=self.logits))
+                tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_one_hot, logits=self.logits))
 
     def _create_optimizer(self):
         with tf.name_scope('optimizer'):
@@ -138,6 +130,7 @@ class CharRNN(object):
                     if (i + 1) % 200 == 0:
                         print('Average loss at step {}: {:5.10f}'.format(i + 1, total_loss / 200))
                         total_loss = 0.0
+                        self.inference()
 
                 except tf.errors.OutOfRangeError:
                     sess.run(self.train_init)
@@ -145,8 +138,9 @@ class CharRNN(object):
             writer.close()
 
     def inference(self):
+
         converter = utils.TextReader(filename=FLAGS.CONVERTER_PATH)
-        rand_sentence = 'به نام خد'
+        rand_sentence = 'به نام خداوند جان و خرد'
         y = np.zeros([1, 1])
         input_eval = converter.text_to_arr(rand_sentence)
         input_eval = np.pad(input_eval, (self.seq_len - len(input_eval), 0), mode='constant')
@@ -165,11 +159,10 @@ class CharRNN(object):
                     self.init_state: new_state
                 }
                 preds, new_state = sess.run([self.prediction, self.final_state], feed_dict=feed_dict)
-                c = utils.pick_top_n(preds, self.num_classes)
+                c = utils.sample(preds[0])
                 samples.append(c)
                 input_eval = np.roll(input_eval, shift=-1)
-                input_eval[-1] = c
-                np.expand_dims(input_eval, 0)
+                input_eval[0][-1] = c
 
             samples = np.array(samples)
             print(rand_sentence)
@@ -183,7 +176,7 @@ class CharRNN(object):
         self._create_summery()
 
 
-if __name__ == '__main__':
+def main(_):
     charnn = CharRNN(FLAGS.NUM_CLASSES,
                      FLAGS.EMBED_SIZE, FLAGS.RNN_SIZE,
                      FLAGS.LAYER_SIZE, FLAGS.BATCH_SIZE,
@@ -191,5 +184,7 @@ if __name__ == '__main__':
 
     charnn.build_graph()
     charnn.train(10000)
-    print(50 * '-')
-    charnn.inference()
+
+
+if __name__ == '__main__':
+    tf.app.run()

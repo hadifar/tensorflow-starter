@@ -39,7 +39,7 @@ print('total chars:', len(chars))
 char2idx = dict((c, i) for i, c in enumerate(chars))
 idx2char = dict((i, c) for i, c in enumerate(chars))
 
-# convert each character in corpus to id
+# convert each character to an unique id
 ################################################################################
 ################################################################################
 
@@ -93,7 +93,7 @@ def on_epoch_end(epoch, _):
             generated += next_char
             sentence = sentence[1:] + next_char
 
-        print()
+        print(generated)
 
 
 def sample(preds, temperature=1.0):
@@ -112,7 +112,8 @@ def sample(preds, temperature=1.0):
 ################################################################################
 
 model = keras.Sequential()
-model.add(keras.layers.CuDNNGRU(256, input_shape=(max_length, len_of_char)))
+# model.add(keras.layers.CuDNNGRU(256, input_shape=(max_length, len_of_char)))
+model.add(keras.layers.GRU(256, input_shape=(max_length, len_of_char)))
 model.add(keras.layers.Dense(len_of_char, activation='softmax'))
 
 # Create graph and train the model for 60 epoch
