@@ -19,6 +19,8 @@ import tensorflow as tf
 
 from lesson9 import utils
 
+from tensorflow.python import debug as tf_debug
+
 tf.reset_default_graph()
 
 FLAGS = tf.flags.FLAGS
@@ -32,7 +34,7 @@ tf.flags.DEFINE_integer('NUM_CLASSES', 40, 'unique char (different classes)')  #
 tf.flags.DEFINE_integer('EMBED_SIZE', 128, 'embedding size')
 tf.flags.DEFINE_integer('RNN_SIZE', 128, 'recurrent hidden size')
 tf.flags.DEFINE_integer('LAYER_SIZE', 1, 'number of stacked layer in RNN')
-tf.flags.DEFINE_float('LEARNING_RATE', 0.002, 'learning rate')
+tf.flags.DEFINE_float('LEARNING_RATE', 0.001, 'learning rate')
 
 
 class CharRNN(object):
@@ -62,8 +64,8 @@ class CharRNN(object):
             train_data = train_data.batch(128)
             train_data = train_data.prefetch(2)
 
-            x = np.random.randint(1, self.num_classes, [1, self.seq_len], dtype=np.int32)
-            y = np.random.randint(1, self.num_classes, [1, 1], dtype=np.int32)
+            x = np.random.randint(0, self.num_classes, [1, self.seq_len], dtype=np.int32)
+            y = np.random.randint(0, self.num_classes, [1, 1], dtype=np.int32)
             test_data = tf.data.Dataset.from_tensor_slices((x, y))
             test_data = test_data.batch(1)
 
@@ -78,7 +80,7 @@ class CharRNN(object):
         with tf.name_scope('RNN'):
             x = tf.one_hot(self.inp, depth=self.num_classes)
 
-            cell = [tf.nn.rnn_cell.BasicLSTMCell(self.rnn_size)] * self.layer_size
+            cell = [tf.nn.rnn_cell.GRUCell(self.rnn_size)] * self.layer_size
 
             rnn_cell = tf.nn.rnn_cell.MultiRNNCell(cell)
 
@@ -88,8 +90,8 @@ class CharRNN(object):
                                                                    initial_state=self.init_state,
                                                                    dtype=tf.float32)
 
-            output = self.final_state[-1].h
-            # x = self.rnn_outputs[:, tf.shape(self.rnn_outputs)[1], :]
+            # output = self.final_state[-1].h
+            output = self.rnn_outputs[:, -1, :]
             w = tf.Variable(initial_value=tf.truncated_normal(shape=[self.rnn_size, self.num_classes]))
             b = tf.Variable(tf.zeros(self.num_classes))
             self.logits = tf.nn.xw_plus_b(output, w, b)
@@ -115,6 +117,7 @@ class CharRNN(object):
     def train(self, training_step):
 
         with tf.Session() as sess:
+            sess = tf_debug.TensorBoardDebugWrapperSession(sess, "Hadifar-PC.local:6064")
             sess.run(tf.global_variables_initializer())
             sess.run(self.train_init)
 
@@ -134,6 +137,8 @@ class CharRNN(object):
 
                 except tf.errors.OutOfRangeError:
                     sess.run(self.train_init)
+                except:
+                    continue
 
             writer.close()
 
@@ -147,19 +152,20 @@ class CharRNN(object):
         input_eval = np.expand_dims(input_eval, 0)
 
         with tf.Session() as sess:
+            sess = tf_debug.TensorBoardDebugWrapperSession(sess, "Hadifar-PC.local:6064")
             sess.run(tf.global_variables_initializer())
             sess.run(self.test_init)
 
             samples = []
-            new_state = sess.run(self.init_state)
+            # new_state = sess.run(self.init_state)
             for i in range(400):
                 feed_dict = {
                     self.inp: input_eval,
                     self.target: y,
-                    self.init_state: new_state
+                    # self.init_state: new_state
                 }
-                preds, new_state = sess.run([self.prediction, self.final_state], feed_dict=feed_dict)
-                c = utils.sample(preds[0])
+                preds = sess.run([self.prediction], feed_dict=feed_dict)
+                c = utils.sample(preds[0][0])
                 samples.append(c)
                 input_eval = np.roll(input_eval, shift=-1)
                 input_eval[0][-1] = c
