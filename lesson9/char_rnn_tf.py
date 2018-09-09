@@ -136,7 +136,7 @@ class CharRNN(object):
                     writer.add_summary(summary, global_step=step)
                     total_loss += batch_loss
                     if (i + 1) % 200 == 0:
-                        print('Average loss at step {}: {:5.2f}'.format(i + 1, total_loss / 200))
+                        print('Average loss at step {}: {:5.10f}'.format(i + 1, total_loss / 200))
                         total_loss = 0.0
 
                 except tf.errors.OutOfRangeError:
