@@ -92,7 +92,12 @@ def batch_generator(input_file, saved_path, batch_siz, seq_len, num_classes=5000
     for i in range(0, len(arr) - seq_len, 3):
         sentences.append(arr[i: i + seq_len])
         next_chars.append(arr[i + seq_len])
-    return np.array(sentences, dtype=np.int32), np.expand_dims(np.array(next_chars, dtype=np.int32), axis=1)
+
+    inp = np.zeros([len(sentences), seq_len, num_classes], dtype=np.float32)
+    for i, sent in enumerate(sentences):
+        for j, s in enumerate(sent):
+            inp[i, j, s] = 1.
+    return inp, np.array(next_chars, dtype=np.int32)
 
 
 def pick_top_n(preds, vocab_size, top_n=5):
