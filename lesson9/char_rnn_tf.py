@@ -34,7 +34,7 @@ tf.flags.DEFINE_integer('NUM_CLASSES', 40, 'unique char (different classes)')  #
 tf.flags.DEFINE_integer('EMBED_SIZE', 128, 'embedding size')
 tf.flags.DEFINE_integer('RNN_SIZE', 128, 'recurrent hidden size')
 tf.flags.DEFINE_integer('LAYER_SIZE', 1, 'number of stacked layer in RNN')
-tf.flags.DEFINE_float('LEARNING_RATE', 0.001, 'learning rate')
+tf.flags.DEFINE_float('LEARNING_RATE', 0.009, 'learning rate')
 
 
 class CharRNN(object):
@@ -142,10 +142,8 @@ class CharRNN(object):
 
         converter = utils.TextReader(filename=FLAGS.CONVERTER_PATH)
         rand_sentence = 'به نام خداوند جان و خرد کزین اندیشه'
+        print(rand_sentence)
         y = np.zeros([1])
-        input_eval = converter.text_to_arr(rand_sentence)
-        input_eval = np.pad(input_eval, (self.seq_len - len(input_eval), 0), mode='constant')
-        input_eval = np.expand_dims(input_eval, 0)
 
         with tf.Session() as sess:
             # sess = tf_debug.TensorBoardDebugWrapperSession(sess, "Hadifar-PC.local:6064")
@@ -155,16 +153,19 @@ class CharRNN(object):
             samples = []
             new_state = sess.run(self.init_state)
             for i in range(400):
+                input_eval = converter.text_to_arr(rand_sentence)
+                input_eval = np.pad(input_eval, (self.seq_len - len(input_eval), 0), mode='constant')
+                input_eval = np.eye(self.num_classes)[input_eval.reshape(-1)]
+                input_eval = np.expand_dims(input_eval, 0)
                 feed_dict = {
                     self.inp: input_eval,
-                    self.target: y,
                     self.init_state: new_state
                 }
                 preds, new_state = sess.run([self.prediction, self.final_state], feed_dict=feed_dict)
                 c = utils.sample(preds[0])
                 samples.append(c)
-                input_eval = np.roll(input_eval, shift=-1)
-                input_eval[0][-1] = c
+                txt = converter.arr_to_text([c])
+                rand_sentence = rand_sentence[1:] + txt[0]
 
             samples = np.array(samples)
             print(rand_sentence)
