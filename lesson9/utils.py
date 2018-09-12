@@ -14,9 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-import codecs
 import copy
-import os
 import pickle
 
 import numpy as np
@@ -79,26 +77,6 @@ class TextReader(object):
     def save_to_file(self, filename):
         with open(filename, 'wb') as f:
             pickle.dump(self.vocab, f)
-
-
-def batch_generator(input_file, saved_path, batch_siz, seq_len, num_classes=5000):
-    with codecs.open(input_file, encoding='utf-8') as f:
-        text = f.read()
-
-    Reader = TextReader(text, max_vocab=num_classes)
-    Reader.save_to_file(os.path.join(saved_path, 'converter.pkl'))
-    arr = Reader.text_to_arr(text)
-    sentences = []
-    next_chars = []
-    for i in range(0, len(arr) - seq_len, 3):
-        sentences.append(arr[i: i + seq_len])
-        next_chars.append(arr[i + seq_len])
-
-    inp = np.zeros([len(sentences), seq_len, num_classes], dtype=np.float32)
-    for i, sent in enumerate(sentences):
-        for j, s in enumerate(sent):
-            inp[i, j, s] = 1.
-    return inp, np.array(next_chars, dtype=np.int32)
 
 
 def batch_generator2(arr, n_seqs, n_steps):
