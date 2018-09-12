@@ -91,20 +91,17 @@ class CharRNN(object):
             seq_output = tf.concat(self.rnn_outputs, axis=1)
             x = tf.reshape(seq_output, shape=[-1, self.rnn_size])
 
-            with tf.variable_scope('softmax'):
-                softmax_w = tf.Variable(initial_value=tf.truncated_normal(
-                    shape=[self.rnn_size, self.num_classes], stddev=1.0))
-                softmax_b = tf.Variable(tf.zeros(self.num_classes))
+            softmax_w = tf.Variable(initial_value=tf.truncated_normal([self.rnn_size, self.num_classes]))
+            softmax_b = tf.Variable(tf.zeros(self.num_classes))
 
             self.logits = tf.nn.xw_plus_b(x, softmax_w, softmax_b)
-            self.prediction = tf.nn.softmax(
-                logits=self.logits, name='predictions')
+            self.prediction = tf.nn.softmax(logits=self.logits, name='predictions')
 
     def _build_loss(self):
         with tf.name_scope('loss'):
             y_one_hot = tf.one_hot(self.targets, self.num_classes)
             y_reshaped = tf.reshape(y_one_hot, shape=tf.shape(self.logits))
-            loss = tf.nn.softmax_cross_entropy_with_logits_v2(
+            loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
                 logits=self.logits, labels=y_reshaped)
             self.loss = tf.reduce_mean(loss)
 
