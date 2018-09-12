@@ -44,35 +44,34 @@ tf.flags.DEFINE_integer('max_vocab', 3500, 'the maximum of char number')
 class CharRNN(object):
     def __init__(self,
                  num_classes,
-                 num_seqs=64,
+                 batch_size=64,
                  num_seq=50,
                  lstm_size=128,
                  num_layers=2):
 
         self.num_classes = num_classes
-        self.batch_size = num_seqs
+        self.batch_size = batch_size
         self.num_seq = num_seq
         self.rnn_size = lstm_size
         self.num_layers = num_layers
         self.global_step = tf.Variable(0, trainable=False, name='global_step')
 
     def build_graph(self):
-        self._build_inputs()
-        self._build_rnn()
-        self._build_loss()
-        self._build_optimizer()
+        self._create_inputs()
+        self._create_model()
+        self._create_loss()
+        self._create_optimizer()
+        self._create_summary()
 
-    def _build_inputs(self):
+    def _create_inputs(self):
         with tf.name_scope('inputs'):
             self.inputs = tf.placeholder(tf.int32, shape=(None, None), name='inputs')
             self.targets = tf.placeholder(tf.int32, shape=(None, None), name='targets')
-            self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
 
-    def _build_rnn(self):
+    def _create_model(self):
         with tf.name_scope('RNN'):
             self.rnn_inputs = tf.one_hot(self.inputs, self.num_classes)
             cell = [tf.nn.rnn_cell.GRUCell(num_units=self.rnn_size) for _ in range(self.num_layers)]
-            cell = [tf.nn.rnn_cell.DropoutWrapper(cell=c, output_keep_prob=self.keep_prob) for c in cell]
             rnn_cell = tf.nn.rnn_cell.MultiRNNCell(cell)
             self.initial_state = rnn_cell.zero_state(batch_size=tf.shape(self.inputs)[0], dtype=tf.float32)
 
@@ -83,18 +82,27 @@ class CharRNN(object):
 
             self.prediction = tf.nn.softmax(logits=self.logits, name='predictions')
 
-    def _build_loss(self):
+    def _create_loss(self):
         with tf.name_scope('loss'):
             loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
                 logits=self.logits, labels=self.targets)
             self.loss = tf.reduce_mean(loss)
 
-    def _build_optimizer(self):
+    def _create_optimizer(self):
         with tf.name_scope('optimizer'):
             self.optimizer = tf.train.AdamOptimizer().minimize(self.loss, global_step=self.global_step)
 
+    def _create_summary(self):
+        with tf.name_scope('summary'):
+            tf.summary.scalar(name='loss', tensor=self.loss)
+            tf.summary.histogram(name='logit', values=self.logits)
+            tf.summary.histogram(name='prediction', values=self.prediction)
+            tf.summary.histogram(name='rnn_output', values=self.rnn_outputs)
+            self.summary_op = tf.summary.merge_all()
+
     def train(self, model_path, batch_gen):
         with tf.Session() as sess:
+
             saver = tf.train.Saver()
             sess.run(tf.global_variables_initializer())
 
@@ -104,6 +112,8 @@ class CharRNN(object):
             else:
                 os.makedirs(model_path)
 
+            writer = tf.summary.FileWriter(model_path + '/tensorboard', sess.graph)
+
             new_state = sess.run(self.initial_state,
                                  feed_dict={self.inputs: np.zeros([self.batch_size, 128], dtype=np.int32)})
 
@@ -112,13 +122,12 @@ class CharRNN(object):
                 feed_dict = {
                     self.inputs: x,
                     self.targets: y,
-                    self.keep_prob: 0.75,
                     self.initial_state: new_state
                 }
-                _, step, new_state, loss = sess.run(
-                    [self.optimizer, self.global_step, self.final_state, self.loss],
+                _, step, new_state, loss, summary = sess.run(
+                    [self.optimizer, self.global_step, self.final_state, self.loss, self.summary_op],
                     feed_dict)
-
+                writer.add_summary(summary, global_step=step)
                 end = time.time()
                 current_step = tf.train.global_step(sess, self.global_step)
                 if step % 50 == 0:
@@ -132,13 +141,14 @@ class CharRNN(object):
                 if current_step >= 3500:
                     break
 
+                writer.close()
+
     def inference(self):
         converter = TextReader(filename=FLAGS.converter_path)
         if os.path.isdir(FLAGS.checkpoint_path):
             FLAGS.checkpoint_path = tf.train.latest_checkpoint(FLAGS.checkpoint_path)
 
-        start = converter.text_to_arr('')
-
+        start = converter.text_to_arr('به نام خداوند جان و خرد')
         with tf.Session() as sess:
             saver = tf.train.Saver()
             saver.restore(sess, FLAGS.checkpoint_path)
@@ -151,7 +161,6 @@ class CharRNN(object):
                 x[0, 0] = c
                 feed_dict = {
                     self.inputs: x,
-                    self.keep_prob: 1,
                     self.initial_state: new_state
                 }
                 preds, new_state = sess.run(
@@ -167,7 +176,6 @@ class CharRNN(object):
                 x[0, 0] = c
                 feed_dict = {
                     self.inputs: x,
-                    self.keep_prob: 1,
                     self.initial_state: new_state
                 }
                 preds, new_state = sess.run(
@@ -199,7 +207,7 @@ def main(_):
 
     char_rnn = CharRNN(
         num_classes=Reader.vocab_size,
-        num_seqs=FLAGS.num_seqs,
+        batch_size=FLAGS.num_seqs,
         num_seq=FLAGS.num_seq,
         lstm_size=FLAGS.lstm_size,
         num_layers=FLAGS.num_layers)
