@@ -58,29 +58,16 @@ class CharRNN(object):
         self.num_classes = num_classes
         self.batch_size = num_seqs
         self.num_seq = num_seq
-        self.lstm_size = lstm_size
+        self.rnn_size = lstm_size
         self.num_layers = num_layers
         self.learning_rate = learning_rate
         self.grad_clip = grad_clip
         self.train_keep_prob = train_keep_prob
-
-        self.inputs = None
-        self.targets = None
-        self.keep_prob = None
-        self.lstm_inputs = None
-        self.initial_state = None
-        self.lstm_outputs = None
-        self.final_state = None
-        self.logits = None
-        self.prediction = None
-        self.loss = None
-        self.optimizer = None
-
         self.global_step = tf.Variable(0, trainable=False, name='global_step')
 
     def build_graph(self):
         self._build_inputs()
-        self._build_lstm()
+        self._build_rnn()
         self._build_loss()
         self._build_optimizer()
 
@@ -89,35 +76,24 @@ class CharRNN(object):
             self.inputs = tf.placeholder(tf.int32, shape=(None, None), name='inputs')
             self.targets = tf.placeholder(tf.int32, shape=(None, None), name='targets')
             self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
-            self.lstm_inputs = tf.one_hot(self.inputs, self.num_classes)
 
-    def _build_lstm(self):
+    def _build_rnn(self):
+        with tf.name_scope('RNN'):
+            self.rnn_inputs = tf.one_hot(self.inputs, self.num_classes)
+            cell = [tf.nn.rnn_cell.GRUCell(num_units=self.rnn_size) for _ in range(self.num_layers)]
+            cell = [tf.nn.rnn_cell.DropoutWrapper(cell=c, output_keep_prob=self.keep_prob) for c in cell]
+            rnn_cell = tf.nn.rnn_cell.MultiRNNCell(cell)
+            self.initial_state = rnn_cell.zero_state(batch_size=tf.shape(self.inputs)[0], dtype=tf.float32)
 
-        def build_cell(lstm_size, keep_prob):
-            lstm = tf.nn.rnn_cell.BasicLSTMCell(num_units=lstm_size)
-            drop = tf.nn.rnn_cell.DropoutWrapper(
-                cell=lstm, output_keep_prob=keep_prob)
-            return drop
+            self.rnn_outputs, self.final_state = tf.nn.dynamic_rnn(
+                cell=rnn_cell, inputs=self.rnn_inputs, initial_state=self.initial_state)
 
-        with tf.name_scope('lstm'):
-            cell = tf.nn.rnn_cell.MultiRNNCell([
-                build_cell(self.lstm_size, self.keep_prob)
-                for _ in range(self.num_layers)
-            ])
-            self.initial_state = cell.zero_state(
-                batch_size=tf.shape(self.inputs)[0], dtype=tf.float32)
-
-            self.lstm_outputs, self.final_state = tf.nn.dynamic_rnn(
-                cell=cell,
-                inputs=self.lstm_inputs,
-                initial_state=self.initial_state)
-
-            seq_output = tf.concat(self.lstm_outputs, axis=1)
-            x = tf.reshape(seq_output, shape=[-1, self.lstm_size])
+            seq_output = tf.concat(self.rnn_outputs, axis=1)
+            x = tf.reshape(seq_output, shape=[-1, self.rnn_size])
 
             with tf.variable_scope('softmax'):
                 softmax_w = tf.Variable(initial_value=tf.truncated_normal(
-                    shape=[self.lstm_size, self.num_classes], stddev=1.0))
+                    shape=[self.rnn_size, self.num_classes], stddev=1.0))
                 softmax_b = tf.Variable(tf.zeros(self.num_classes))
 
             self.logits = tf.nn.xw_plus_b(x, softmax_w, softmax_b)
