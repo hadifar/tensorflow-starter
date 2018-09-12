@@ -15,6 +15,7 @@
 # limitations under the License.
 # ==============================================================================
 import codecs
+import copy
 import os
 import pickle
 
@@ -98,6 +99,22 @@ def batch_generator(input_file, saved_path, batch_siz, seq_len, num_classes=5000
         for j, s in enumerate(sent):
             inp[i, j, s] = 1.
     return inp, np.array(next_chars, dtype=np.int32)
+
+
+def batch_generator2(arr, n_seqs, n_steps):
+    arr = copy.copy(arr)
+    batch_size = n_seqs * n_steps
+    num_batches = len(arr) // batch_size
+    arr = arr[:batch_size * num_batches]
+    arr = arr.reshape((n_seqs, -1))
+
+    while True:
+        np.random.shuffle(arr)
+        for n in range(0, arr.shape[1], n_steps):
+            x = arr[:, n:n + n_steps]
+            y = np.zeros_like(x)
+            y[:, :-1], y[:, -1] = x[:, 1:], x[:, 0]
+            yield x, y
 
 
 def pick_top_n(preds, vocab_size, top_n=5):

@@ -25,21 +25,18 @@ from lesson9.utils import TextReader, pick_top_n
 from lesson9.utils import batch_generator2
 
 FLAGS = tf.flags.FLAGS
-tf.flags.DEFINE_string('checkpoint_path', '../lesson9/default2/model', 'checkpoint path')
-tf.flags.DEFINE_string('converter_path', '../lesson9/default2/converter.pkl', 'converter path')
-tf.flags.DEFINE_string('name', 'default2', 'the name of the model')
+tf.flags.DEFINE_string('checkpoint_path', '../lesson9/default/model', 'checkpoint path')
+tf.flags.DEFINE_string('converter_path', '../lesson9/default/converter.pkl', 'converter path')
+tf.flags.DEFINE_string('name', 'default', 'the name of the model')
 tf.flags.DEFINE_integer('num_seqs', 32, 'number of seqs in batch')
 tf.flags.DEFINE_integer('num_seq', 20, 'length of one seq')
 tf.flags.DEFINE_integer('lstm_size', 128, 'size of hidden layer')
 tf.flags.DEFINE_integer('num_layers', 2, 'number of lstm layers')
 tf.flags.DEFINE_integer('embedding_size', 128, 'size of embedding')
 tf.flags.DEFINE_float('learning_rate', 0.009, 'learning_rate')
-tf.flags.DEFINE_float('train_keep_prob', 0.75,
-                      'dropout rate during training process')
 tf.flags.DEFINE_string('input_file', '../lesson9/data/test.txt', 'utf-8 encoded input file')
 tf.flags.DEFINE_integer('max_steps', 10000, 'max steps of training')
-tf.flags.DEFINE_integer('save_model_every', 1000,
-                        'save the model every 1000 steps')
+tf.flags.DEFINE_integer('save_model_every', 1000, 'save the model every 1000 steps')
 tf.flags.DEFINE_integer('log_every', 50, 'log the summaries every 10 steps')
 tf.flags.DEFINE_integer('max_vocab', 3500, 'the maximum of char number')
 
@@ -50,19 +47,13 @@ class CharRNN(object):
                  num_seqs=64,
                  num_seq=50,
                  lstm_size=128,
-                 num_layers=2,
-                 learning_rate=0.001,
-                 grad_clip=5,
-                 train_keep_prob=0.5):
+                 num_layers=2):
 
         self.num_classes = num_classes
         self.batch_size = num_seqs
         self.num_seq = num_seq
         self.rnn_size = lstm_size
         self.num_layers = num_layers
-        self.learning_rate = learning_rate
-        self.grad_clip = grad_clip
-        self.train_keep_prob = train_keep_prob
         self.global_step = tf.Variable(0, trainable=False, name='global_step')
 
     def build_graph(self):
@@ -142,7 +133,6 @@ class CharRNN(object):
                     break
 
     def inference(self):
-
         converter = TextReader(filename=FLAGS.converter_path)
         if os.path.isdir(FLAGS.checkpoint_path):
             FLAGS.checkpoint_path = tf.train.latest_checkpoint(FLAGS.checkpoint_path)
@@ -212,9 +202,7 @@ def main(_):
         num_seqs=FLAGS.num_seqs,
         num_seq=FLAGS.num_seq,
         lstm_size=FLAGS.lstm_size,
-        num_layers=FLAGS.num_layers,
-        learning_rate=FLAGS.learning_rate,
-        train_keep_prob=FLAGS.train_keep_prob)
+        num_layers=FLAGS.num_layers)
 
     char_rnn.build_graph()
     char_rnn.train(model_path, batch_gen)
