@@ -99,7 +99,7 @@ lesson6/data/
 lesson6/graphs/
 
 lesson7/data/
-lesson7/default
+*.h5
 
 lesson8/data/
 lesson8/*.mat
