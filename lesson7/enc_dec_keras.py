@@ -42,9 +42,10 @@ http://www.manythings.org/anki/
 '''
 from __future__ import print_function
 
+import os
+
 import numpy as np
 import tensorflow as tf
-import os
 from tensorflow.keras.layers import Input, CuDNNLSTM, LSTM, Dense
 from tensorflow.keras.models import Model
 
@@ -60,7 +61,7 @@ path_to_zip = tf.keras.utils.get_file(
     'spa-eng.zip', origin='http://download.tensorflow.org/data/spa-eng.zip',
     extract=True)
 
-data_path = os.path.dirname(path_to_zip)+"/spa-eng/spa.txt"
+data_path = os.path.dirname(path_to_zip) + "/spa-eng/spa.txt"
 
 # Vectorize the data.
 input_texts = []
