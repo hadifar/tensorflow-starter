@@ -108,3 +108,6 @@ lesson9/data
 lesson9/graphs
 lesson9/*.pkl
 lesson9/*.txt
+
+
+lesson10/*.csv
