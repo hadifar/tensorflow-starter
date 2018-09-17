@@ -64,7 +64,7 @@ print(model.summary())
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     sess.run(tf.tables_initializer())
-    model.fit(x_train, y_train, epochs=1, batch_size=128)
+    model.fit(x_train, y_train, epochs=3, batch_size=128)
 
     # prediction
     predicts = model.predict(x_test, batch_size=128)
