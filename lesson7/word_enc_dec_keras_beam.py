@@ -149,19 +149,18 @@ new_model = load_model('s2s.hd5')
 
 def search(our_model, src_input, top_k=1, sequence_max_len=25):
     # (log(1), initialize_of_zeros)
-    k_beam = [(0, [0] * sequence_max_len)]
+    candidate_sequences = [(0, [0] * sequence_max_len)]
 
     # l : point on target sentence to predict
     for l in range(sequence_max_len):
-        all_k_beams = []
-        for prob, sent_predict in k_beam:
+        tmp_candidates = []
+        for prob, sent_predict in candidate_sequences:
             predicted = our_model.predict([np.expand_dims(src_input, 0), np.expand_dims(sent_predict, 0)])[0]
-            # predicted = model.predict([np.array([src_input]), np.array([sent_predict])])[0]
             # top k!
             possible_k = predicted[l].argsort()[-top_k:][::-1]
 
             # add to all possible candidates for k-beams
-            all_k_beams += [
+            tmp_candidates += [
                 (
                     sum(np.log(predicted[i][sent_predict[i + 1]]) for i in range(l)) + np.log(predicted[l][next_wid]),
                     list(sent_predict[:l]) + [next_wid] + [0] * (sequence_max_len - l - 1)
@@ -169,10 +168,10 @@ def search(our_model, src_input, top_k=1, sequence_max_len=25):
                 for next_wid in possible_k
             ]
 
-        # top k
-        k_beam = sorted(all_k_beams)[-top_k:]
+        # pick top k
+        candidate_sequences = sorted(tmp_candidates)[-top_k:]
 
-    return k_beam
+    return candidate_sequences
 
 
 # inference
