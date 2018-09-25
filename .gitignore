@@ -98,6 +98,7 @@ lesson5/*.mat
 lesson6/data/
 lesson6/graphs/
 
+lesson7/graphs
 lesson7/*.h5
 lesson7/*.hd5
 
