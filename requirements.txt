@@ -5,3 +5,4 @@ pillow
 tensorflow
 tensorboard
 tensorflow-hub
+nltk
