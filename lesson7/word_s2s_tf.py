@@ -17,17 +17,28 @@
 import os
 import time
 
-import nltk
 import numpy as np
 import tensorflow as tf
 
+from lesson7.utils import TextUtils
+
 
 class S2SModel(object):
-    def __init__(self, src_vocab_size, trg_vocab_size, enc_hidden_size, dec_hidden_size, n_layers):
+
+    def __init__(self, src_vocab_size, trg_vocab_size,
+                 eng_index_to_word, spa_index_to_word,
+                 max_inp_seq, max_trg_seq,
+                 enc_hidden_size, dec_hidden_size,
+                 n_layers):
+
         self.src_vocab_size = src_vocab_size
         self.trg_vocab_size = trg_vocab_size
+        self.eng_index_to_word = eng_index_to_word
+        self.spa_index_to_word = spa_index_to_word
         self.enc_hidden_size = enc_hidden_size
         self.dec_hidden_size = dec_hidden_size
+        self.max_inp_seq = max_inp_seq
+        self.max_trg_seq = max_trg_seq
         self.nb_layers = n_layers
         self.global_step = tf.get_variable(name='global_step', trainable=False, initializer=0)
 
@@ -35,28 +46,31 @@ class S2SModel(object):
         with tf.name_scope('data'):
             self.enc_inps = tf.placeholder(dtype=tf.int32, shape=(None, None))  # batch_size x enc_seq_len
             self.dec_inps = tf.placeholder(dtype=tf.int32, shape=(None, None))  # batch_size x dec_seq_len
-            self.target = tf.placeholder(dtype=tf.int32, shape=(None, None, None))  # batch_size x target_seq_len
+            self.target = tf.placeholder(dtype=tf.int32, shape=(None, None))  # batch_size x target_seq_len
 
     def _create_model(self):
-        with tf.name_scope('s2s'):
+        with tf.name_scope('encoder'):
             enc_inp = tf.one_hot(self.enc_inps, self.src_vocab_size)
-            dec_inp = tf.one_hot(self.dec_inps, self.trg_vocab_size)
-
             enc_rnn_layers = [tf.nn.rnn_cell.GRUCell(self.enc_hidden_size) for _ in range(self.nb_layers)]
             enc_cell = tf.nn.rnn_cell.MultiRNNCell(enc_rnn_layers)
-            _, enc_state = tf.nn.dynamic_rnn(cell=enc_cell, inputs=enc_inp, dtype=tf.float32, scope='encoder')
-
+            _, enc_state = tf.nn.dynamic_rnn(cell=enc_cell,
+                                             inputs=enc_inp,
+                                             dtype=tf.float32)
+        with tf.name_scope('decoder'):
+            dec_inp = tf.one_hot(self.dec_inps, self.trg_vocab_size)
             dec_rnn_layers = [tf.nn.rnn_cell.GRUCell(self.dec_hidden_size) for _ in range(self.nb_layers)]
             dec_cell = tf.nn.rnn_cell.MultiRNNCell(dec_rnn_layers)
-            enc_out, self.enc_state = tf.nn.dynamic_rnn(cell=dec_cell, inputs=dec_inp, initial_state=enc_state,
-                                                        dtype=tf.float32, scope='decoder')
+            enc_out, self.enc_state = tf.nn.dynamic_rnn(cell=dec_cell,
+                                                        inputs=dec_inp,
+                                                        initial_state=enc_state,
+                                                        dtype=tf.float32)
 
-            self.logits = tf.layers.dense(enc_out, self.trg_vocab_size)
-            self.pred = tf.nn.softmax(self.logits)
+        self.logits = tf.layers.dense(enc_out, self.trg_vocab_size)
+        self.pred = tf.nn.softmax(self.logits)
 
     def _create_loss(self):
         with tf.name_scope('loss'):
-            loss = tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.target, logits=self.logits)
+            loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.target, logits=self.logits)
             self.loss = tf.reduce_mean(loss)
 
     def _create_optimizer(self):
@@ -112,7 +126,7 @@ class S2SModel(object):
 
                 if step % 250 == 0:
                     saver.save(sess,
-                               os.path.join('graph/', 'model.ckpt'), global_step=step)
+                               os.path.join('graphs/', 'model.ckpt'), global_step=step)
 
                 if step > 2000:
                     break
@@ -121,15 +135,15 @@ class S2SModel(object):
     def inference(self, input_sequences):
 
         for enc in input_sequences:
-            print('--'*50)
+            print('--' * 50)
             trans = ''
             for t in enc:
-                if t !=0:
-                    trans += eng_index_to_word[t]
+                if t != 0:
+                    trans += self.eng_index_to_word[t]
             print(trans)
 
             enc = np.expand_dims(enc, 0)
-            dec = np.zeros([1, max_trg_seq])
+            dec = np.zeros([1, self.max_trg_seq])
             dec[0][0] = 1  # <s> token
             i = 1
             decoded_sentence = '<s> '
@@ -146,10 +160,10 @@ class S2SModel(object):
                     if sampled_token_index == 0:
                         sample_word = ''
                     else:
-                        sample_word = spa_index_to_word[sampled_token_index]
+                        sample_word = self.spa_index_to_word[sampled_token_index]
                     decoded_sentence += sample_word + ' '
 
-                    if sample_word == '</s>' or len(decoded_sentence.split()) > max_trg_seq:
+                    if sample_word == '</s>' or len(decoded_sentence.split()) > self.max_trg_seq:
                         break
 
                     dec[0][i] = sampled_token_index
@@ -159,71 +173,18 @@ class S2SModel(object):
 
 if __name__ == '__main__':
 
-    nb_examples = 256
-    nb_epochs = 100
+    text_utils = TextUtils()
+    enc_sequence_inps, dec_sequence_inps, dec_sequence_outputs = text_utils.load_data()
 
-    path_to_zip = tf.keras.utils.get_file(
-        'spa-eng.zip', origin='http://download.tensorflow.org/data/spa-eng.zip',
-        extract=True)
+    s2s = S2SModel(text_utils.eng_vocab_size,
+                   text_utils.spa_vocab_size,
+                   text_utils.eng_index_to_word,
+                   text_utils.spa_index_to_word,
+                   text_utils.max_inp_seq,
+                   text_utils.max_trg_seq,
+                   enc_hidden_size=128, dec_hidden_size=128,
+                   n_layers=1)
 
-    data_path = os.path.dirname(path_to_zip) + "/spa-eng/spa.txt"
-
-    input_texts = []
-    target_texts = []
-
-    with open(data_path, 'r', encoding='utf-8') as f:
-        lines = f.read().split('\n')
-
-    for line in lines[:nb_examples]:
-        inp_txt, trg_txt = line.split('\t')
-        inp_txt = nltk.word_tokenize(inp_txt)
-        trg_txt = nltk.word_tokenize(trg_txt)
-
-        input_texts.append('<s>' + ' ' + ' '.join(inp_txt) + ' ' + '</s>')
-        target_texts.append('<s>' + ' ' + ' '.join(trg_txt) + ' ' + '</s>')
-
-    print('number of training examples for language1: ', len(input_texts))
-    print('number of training examples for language2: ', len(target_texts))
-
-
-    def get_tokenizer(text):
-        tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
-        tokenizer.fit_on_texts(text)
-        return tokenizer
-
-
-    # define two tokenizer for both languages with helper function (get_tokenizer())
-    eng_tokenizer = get_tokenizer(input_texts)
-    spa_tokenizer = get_tokenizer(target_texts)
-
-    # convert each sentence to sequence of integers
-    enc_sequence_inps = eng_tokenizer.texts_to_sequences(input_texts)
-    dec_sequence_inps = spa_tokenizer.texts_to_sequences(target_texts)
-
-    # find maximum length of source and target sentences
-    max_inp_seq = max([len(txt) for txt in enc_sequence_inps])
-    max_trg_seq = max([len(txt) for txt in dec_sequence_inps])
-
-    eng_vocab_size = len(eng_tokenizer.word_index) + 1
-    spa_vocab_size = len(spa_tokenizer.word_index) + 1
-
-    print('max sequence length in language 1', max_inp_seq)
-    print('max sequence length in language 2', max_trg_seq)
-
-    # add zero padding to our sentences
-    # padding is necessary in case batch processing
-    enc_sequence_inps = tf.keras.preprocessing.sequence.pad_sequences(enc_sequence_inps, max_inp_seq, padding='pre')
-    dec_sequence_inps = tf.keras.preprocessing.sequence.pad_sequences(dec_sequence_inps, max_trg_seq, padding='post')
-    # our target (ground truth) is one token ahead of decoder input
-    dec_sequence_outputs = np.zeros_like(dec_sequence_inps)
-    dec_sequence_outputs[:, :max_trg_seq - 1] = dec_sequence_inps[:, 1:]
-    dec_sequence_outputs = tf.keras.utils.to_categorical(dec_sequence_outputs, spa_vocab_size)
-
-    # create two dictionary for convert id to word (its used in inference time)
-    spa_index_to_word = dict([(value, key) for (key, value) in spa_tokenizer.word_index.items()])
-    eng_index_to_word = dict([(value, key) for (key, value) in eng_tokenizer.word_index.items()])
-
-    s2s = S2SModel(eng_vocab_size, spa_vocab_size, 128, 128, 1)
     s2s.build_graph()
     s2s.train(enc_sequence_inps, dec_sequence_inps, dec_sequence_outputs)
-    s2s.inference(enc_sequence_inps[0:30])
+    s2s.inference(enc_sequence_inps[0:10])
