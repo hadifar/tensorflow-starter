@@ -17,9 +17,6 @@
 
 from __future__ import print_function
 
-import os
-
-import nltk
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
@@ -29,75 +26,27 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.optimizers import Adam
 
+from lesson7.utils import TextUtils
+
 tf.reset_default_graph()
 
 ###############################################################################
 ###############################################################################
 ###############################################################################
 
-nb_examples = 1024
-nb_epochs = 100
+text_utils = TextUtils()
 
-path_to_zip = tf.keras.utils.get_file(
-    'spa-eng.zip', origin='http://download.tensorflow.org/data/spa-eng.zip',
-    extract=True)
+enc_sequence_inps, dec_sequence_inps, dec_sequence_outputs = text_utils.load_data(nb_examples=256)
+dec_sequence_outputs = tf.keras.utils.to_categorical(dec_sequence_outputs)  # currently keras has issue with sparse loss
 
-data_path = os.path.dirname(path_to_zip) + "/spa-eng/spa.txt"
+max_inp_seq = text_utils.max_inp_seq
+max_trg_seq = text_utils.max_trg_seq
 
-input_texts = []
-target_texts = []
+eng_vocab_size = text_utils.eng_vocab_size
+spa_vocab_size = text_utils.spa_vocab_size
 
-with open(data_path, 'r', encoding='utf-8') as f:
-    lines = f.read().split('\n')
-
-for line in lines[:nb_examples]:
-    inp_txt, trg_txt = line.split('\t')
-    inp_txt = nltk.word_tokenize(inp_txt)
-    trg_txt = nltk.word_tokenize(trg_txt)
-
-    input_texts.append('<s>' + ' ' + ' '.join(inp_txt) + ' ' + '</s>')
-    target_texts.append('<s>' + ' ' + ' '.join(trg_txt) + ' ' + '</s>')
-
-print('number of training examples for language1: ', len(input_texts))
-print('number of training examples for language2: ', len(target_texts))
-
-
-def get_tokenizer(text):
-    tokenizer = tf.keras.preprocessing.text.Tokenizer(filters='')
-    tokenizer.fit_on_texts(text)
-    return tokenizer
-
-
-# define two tokenizer for both languages with helper function (get_tokenizer())
-eng_tokenizer = get_tokenizer(input_texts)
-spa_tokenizer = get_tokenizer(target_texts)
-
-# convert each sentence to sequence of integers
-enc_sequence_inps = eng_tokenizer.texts_to_sequences(input_texts)
-dec_sequence_inps = spa_tokenizer.texts_to_sequences(target_texts)
-
-# find maximum length of source and target sentences
-max_inp_seq = max([len(txt) for txt in enc_sequence_inps])
-max_trg_seq = max([len(txt) for txt in dec_sequence_inps])
-
-eng_vocab_size = len(eng_tokenizer.word_index) + 1
-spa_vocab_size = len(spa_tokenizer.word_index) + 1
-
-print('max sequence length in language 1', max_inp_seq)
-print('max sequence length in language 2', max_trg_seq)
-
-# add zero padding to our sentences
-# padding is necessary in case batch processing
-enc_sequence_inps = tf.keras.preprocessing.sequence.pad_sequences(enc_sequence_inps, max_inp_seq)
-dec_sequence_inps = tf.keras.preprocessing.sequence.pad_sequences(dec_sequence_inps, max_trg_seq)
-# our target (ground truth) is one token ahead of decoder input
-dec_sequence_outputs = np.zeros_like(dec_sequence_inps)
-dec_sequence_outputs[:, :max_trg_seq - 1] = dec_sequence_inps[:, 1:]
-dec_sequence_outputs = tf.keras.utils.to_categorical(dec_sequence_outputs, spa_vocab_size)
-
-# create two dictionary for convert id to word (its used in inference time)
-spa_index_to_word = dict([(value, key) for (key, value) in spa_tokenizer.word_index.items()])
-eng_index_to_word = dict([(value, key) for (key, value) in eng_tokenizer.word_index.items()])
+spa_index_to_word = text_utils.spa_index_to_word
+eng_index_to_word = text_utils.eng_index_to_word
 
 
 ################################################################################
@@ -146,7 +95,7 @@ pred = dec_dense(dec_output)
 # compile and fit
 model = Model(inputs=[enc_inp, dec_inp], outputs=pred)
 model.compile(optimizer=Adam(0.005), loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit([enc_sequence_inps, dec_sequence_inps], dec_sequence_outputs, batch_size=128, epochs=nb_epochs)
+model.fit([enc_sequence_inps, dec_sequence_inps], dec_sequence_outputs, batch_size=128, epochs=100)
 
 # save model
 model.save('s2s.hd5')
@@ -210,11 +159,14 @@ def decode_sequence(input_seq):
     return decoded_sentence
 
 
+# translate 32 sentences from data
 for seq_index in range(32):
     # Take one sequence (part of the training set)
     # for trying out decoding.
     input_seq = enc_sequence_inps[seq_index: seq_index + 1]
+
+    text_utils.print_sentence(input_seq)
+
     decoded_sentence = decode_sequence(input_seq)
     print('-')
-    print('Input sentence:', input_texts[seq_index])
     print('Decoded sentence:', decoded_sentence)

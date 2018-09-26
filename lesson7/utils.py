@@ -89,12 +89,21 @@ class TextUtils(object):
 
         # add zero padding to our sentences
         # padding is necessary in case batch processing
-        enc_sequence_inps = tf.keras.preprocessing.sequence.pad_sequences(enc_sequence_inps, self.max_inp_seq,
+        enc_sequence_inps = tf.keras.preprocessing.sequence.pad_sequences(enc_sequence_inps,
+                                                                          self.max_inp_seq,
                                                                           padding='post')
-        dec_sequence_inps = tf.keras.preprocessing.sequence.pad_sequences(dec_sequence_inps, self.max_trg_seq,
+        dec_sequence_inps = tf.keras.preprocessing.sequence.pad_sequences(dec_sequence_inps,
+                                                                          self.max_trg_seq,
                                                                           padding='post')
         # our target (ground truth) is one token ahead of decoder input
         dec_sequence_outputs = np.zeros_like(dec_sequence_inps)
         dec_sequence_outputs[:, :self.max_trg_seq - 1] = dec_sequence_inps[:, 1:]
 
         return enc_sequence_inps, dec_sequence_inps, dec_sequence_outputs
+
+    def print_sentence(self, sequences):
+        trans = ''
+        for t in sequences:
+            if t != 0:
+                trans += self.eng_index_to_word[t]
+        print(trans)
