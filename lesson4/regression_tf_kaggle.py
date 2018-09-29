@@ -20,12 +20,15 @@ import tensorflow as tf
 
 from helper.data_helper import DataHelper
 
-train = pd.read_csv('/Users/mac/Downloads/train.csv')
+# House Prices Kaggle challenge
+# https://www.kaggle.com/c/house-prices-advanced-regression-techniques
+
+train = pd.read_csv('train.csv')
 train = train.drop(columns=['ID'])
 train_labels = train['medv'].values
 train_data = train.drop(columns='medv').values
 
-test_data = pd.read_csv('/Users/mac/Downloads/test.csv')
+test_data = pd.read_csv('test.csv')
 # test_data = train.drop(columns=[])
 
 mean = train_data.mean(axis=0)
