@@ -22,8 +22,9 @@ import pandas as pd
 from gensim.models import KeyedVectors
 from tensorflow import keras
 
-EMBEDDING_CACHE = './lesson12/cache/embedding.npy'
-EMBEDDING_FILE = '//Users/mac/PycharmProjects/GrammarCorrection/data/embedding/wiki.en.vec'
+EMBEDDING_CACHE = './data/cache/embedding.npy'
+EMBEDDING_FILE = '/Users/mac/PycharmProjects/GrammarCorrection/data/embedding/wiki.en.vec'
+CACHE_FILE = './data/cache/'
 MAX_VOCAB_SIZE = 60000
 
 
@@ -118,39 +119,66 @@ def _preprocess_texts(texts):
 
 
 def load_data():
-    q1_train, q2_train, labels_train = _load_x_y('./data/train.tsv')
-    q1_test, q2_test, labels_test = _load_x_y('./data/test.tsv')
-    q1_dev, q2_dev, labels_dev = _load_x_y('./data/dev.tsv')
+    if os.path.isfile(CACHE_FILE + 'q1_train.npy'):  # if cache available
+        q1_train = np.load(CACHE_FILE + 'q1_train.npy')
+        q2_train = np.load(CACHE_FILE + 'q2_train.npy')
+        labels_train = np.load(CACHE_FILE + 'train_label.npy')
+        q1_dev = np.load(CACHE_FILE + 'q1_dev.npy')
+        q2_dev = np.load(CACHE_FILE + 'q2_dev.npy')
+        labels_dev = np.load(CACHE_FILE + 'dev_label.npy')
+        q1_test = np.load(CACHE_FILE + 'q1_test.npy')
+        q2_test = np.load(CACHE_FILE + 'q2_test.npy')
+        labels_test = np.load(CACHE_FILE + 'test_label.npy')
+        word_index = np.load(CACHE_FILE + 'word_index.npy').item()
+        embedding = load_embedding_matrix(word_index)
+    else:
+        q1_train, q2_train, labels_train = _load_x_y('./data/train.tsv')
+        q1_test, q2_test, labels_test = _load_x_y('./data/test.tsv')
+        q1_dev, q2_dev, labels_dev = _load_x_y('./data/dev.tsv')
 
-    q1_train = _preprocess_texts(q1_train)
-    q2_train = _preprocess_texts(q2_train)
-    q1_test = _preprocess_texts(q1_test)
-    q2_test = _preprocess_texts(q2_test)
-    q1_dev = _preprocess_texts(q1_dev)
-    q2_dev = _preprocess_texts(q2_dev)
+        q1_train = _preprocess_texts(q1_train[:])
+        q2_train = _preprocess_texts(q2_train[:])
+        q1_test = _preprocess_texts(q1_test[:])
+        q2_test = _preprocess_texts(q2_test[:])
+        q1_dev = _preprocess_texts(q1_dev[:])
+        q2_dev = _preprocess_texts(q2_dev[:])
 
-    tokenizer = keras.preprocessing.text.Tokenizer(lower=False, filters='')
+        tokenizer = keras.preprocessing.text.Tokenizer(lower=False, filters='')
 
-    tokenizer.fit_on_texts(q1_train + q2_train + q1_test + q2_test + q1_dev + q2_dev)
+        tokenizer.fit_on_texts(q1_train + q2_train + q1_test + q2_test + q1_dev + q2_dev)
 
-    q1_train = tokenizer.texts_to_sequences(q1_train)
-    q2_train = tokenizer.texts_to_sequences(q2_train)
+        q1_train = tokenizer.texts_to_sequences(q1_train)
+        q2_train = tokenizer.texts_to_sequences(q2_train)
+        # max([len(q) for q in q1_train])
 
-    q1_test = tokenizer.texts_to_sequences(q1_test)
-    q2_test = tokenizer.texts_to_sequences(q2_test)
+        q1_test = tokenizer.texts_to_sequences(q1_test)
+        q2_test = tokenizer.texts_to_sequences(q2_test)
 
-    q1_dev = tokenizer.texts_to_sequences(q1_dev)
-    q2_dev = tokenizer.texts_to_sequences(q2_dev)
+        q1_dev = tokenizer.texts_to_sequences(q1_dev)
+        q2_dev = tokenizer.texts_to_sequences(q2_dev)
 
-    q1_train = keras.preprocessing.sequence.pad_sequences(q1_train, maxlen=50)  # 50 is chosen randomly!!!
-    q2_train = keras.preprocessing.sequence.pad_sequences(q2_train, maxlen=50)
+        q1_train = keras.preprocessing.sequence.pad_sequences(q1_train, maxlen=50)  # 50 is chosen arbitrary!!!
+        q2_train = keras.preprocessing.sequence.pad_sequences(q2_train, maxlen=50)
 
-    q1_test = keras.preprocessing.sequence.pad_sequences(q1_test, maxlen=50)
-    q2_test = keras.preprocessing.sequence.pad_sequences(q2_test, maxlen=50)
+        q1_test = keras.preprocessing.sequence.pad_sequences(q1_test, maxlen=50)
+        q2_test = keras.preprocessing.sequence.pad_sequences(q2_test, maxlen=50)
 
-    q1_dev = keras.preprocessing.sequence.pad_sequences(q1_dev, maxlen=50)
-    q2_dev = keras.preprocessing.sequence.pad_sequences(q2_dev, maxlen=50)
+        q1_dev = keras.preprocessing.sequence.pad_sequences(q1_dev, maxlen=50)
+        q2_dev = keras.preprocessing.sequence.pad_sequences(q2_dev, maxlen=50)
 
-    embedding = load_embedding_matrix(tokenizer.word_index)
+        np.save(CACHE_FILE + 'q1_train.npy', q1_train)
+        np.save(CACHE_FILE + 'q2_train.npy', q2_train)
+        np.save(CACHE_FILE + 'train_label.npy', labels_train)
+        np.save(CACHE_FILE + 'q1_dev.npy', q1_dev)
+        np.save(CACHE_FILE + 'q2_dev.npy', q2_dev)
+        np.save(CACHE_FILE + 'dev_label.npy', labels_dev)
+        np.save(CACHE_FILE + 'q1_test.npy', q1_test)
+        np.save(CACHE_FILE + 'q2_test.npy', q2_test)
+        np.save(CACHE_FILE + 'test_label.npy', labels_test)
+        np.save(CACHE_FILE + 'word_index.npy', tokenizer.word_index)
 
-    return embedding, (q1_train, q2_train, labels_train), (q1_test, q2_test, labels_test), (q1_dev, q2_dev, labels_dev)
+        word_index = tokenizer.word_index
+        embedding = load_embedding_matrix(word_index)
+
+    return embedding, word_index, (q1_train, q2_train, labels_train), (q1_test, q2_test, labels_test), (
+    q1_dev, q2_dev, labels_dev)
