@@ -6,3 +6,4 @@ tensorflow
 tensorboard
 tensorflow-hub
 nltk
+gensim

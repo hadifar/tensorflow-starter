@@ -92,6 +92,8 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
+lesson4/*.csv
+
 .idea/
 lesson5/*.mat
 
@@ -109,6 +111,8 @@ lesson9/data
 lesson9/graphs
 lesson9/*.pkl
 lesson9/*.txt
+
+lesson12/data/
 
 
 lesson10/*.csv
