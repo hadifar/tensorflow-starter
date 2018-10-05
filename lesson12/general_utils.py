@@ -25,7 +25,7 @@ from tensorflow import keras
 EMBEDDING_CACHE = './data/cache/embedding.npy'
 EMBEDDING_FILE = '/Users/mac/PycharmProjects/GrammarCorrection/data/embedding/wiki.en.vec'
 CACHE_FILE = './data/cache/'
-MAX_VOCAB_SIZE = 60000
+_MAX_VOCAB = 100000
 
 
 def load_embedding_matrix(word_index):
@@ -38,21 +38,15 @@ def load_embedding_matrix(word_index):
     word2vec = KeyedVectors.load_word2vec_format(EMBEDDING_FILE)
     print('Found %s word vectors of word2vec' % len(word2vec.vocab))
 
-    nb_words = min(MAX_VOCAB_SIZE, len(word_index)) + 1
+    nb_words = min(_MAX_VOCAB, len(word_index)) + 1
 
     embedding_matrix = np.zeros((nb_words, 300))
     for word, i in word_index.items():
         if i >= nb_words:
-            continue
+            break
         if word in word2vec.vocab:
             embedding_matrix[i] = word2vec.word_vec(word)
     print('Null word embeddings: %d' % np.sum(np.sum(embedding_matrix, axis=1) == 0))
-
-    # check the words which not in embedding vectors
-    not_found_words = []
-    for word, i in word_index.items():
-        if word not in word2vec.vocab:
-            not_found_words.append(word)
 
     np.save(open(EMBEDDING_CACHE, 'wb'), embedding_matrix)
     return embedding_matrix
