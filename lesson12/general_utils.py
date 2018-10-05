@@ -54,7 +54,7 @@ def load_embedding_matrix(word_index):
 
 def _load_x_y(path_file):
     df = pd.read_csv(path_file, sep='\t')
-    labels = df.is_duplicate.values
+    labels = np.expand_dims(df.is_duplicate.values, axis=1).astype(np.float32)
     q1 = list(df.question1.values.astype(str))
     q2 = list(df.question2.values.astype(str))
     return q1, q2, labels
@@ -175,4 +175,4 @@ def load_data():
         embedding = load_embedding_matrix(word_index)
 
     return embedding, word_index, (q1_train, q2_train, labels_train), (q1_test, q2_test, labels_test), (
-    q1_dev, q2_dev, labels_dev)
+        q1_dev, q2_dev, labels_dev)
