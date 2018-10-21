@@ -21,6 +21,13 @@ import tensorflow as tf
 from lesson12 import general_utils
 
 
+"""
+
+Pair text similarity (relevancy)
+Siamese network with LSTM
+
+"""
+
 class PairSimilarity(object):
 
     def __init__(self, data, embed_weights, gru_size=128, vocab_size=100000):
@@ -154,7 +161,6 @@ class PairSimilarity(object):
 
     def inference(self):
         saver = tf.train.Saver()
-
         with tf.Session() as sess:
 
             sess.run(tf.global_variables_initializer())
