@@ -172,26 +172,25 @@ class S2SModel(object):
         print(decoded_sentence)
 
 
-if __name__ == '__main__':
-    text_utils = TextUtils()
-    enc_sequence_inps, dec_sequence_inps, dec_sequence_outputs = text_utils.load_data(nb_examples=FLAGS.nb_examples)
+text_utils = TextUtils()
+enc_sequence_inps, dec_sequence_inps, dec_sequence_outputs = text_utils.load_data(nb_examples=FLAGS.nb_examples)
 
-    s2s = S2SModel(text_utils.eng_vocab_size,
-                   text_utils.spa_vocab_size,
-                   text_utils.eng_index_to_word,
-                   text_utils.spa_index_to_word,
-                   text_utils.max_inp_seq,
-                   text_utils.max_trg_seq,
-                   enc_hidden_size=FLAGS.enc_hid_size,
-                   dec_hidden_size=FLAGS.dec_hid_size,
-                   n_layers=FLAGS.n_layers)
+s2s = S2SModel(text_utils.eng_vocab_size,
+               text_utils.spa_vocab_size,
+               text_utils.eng_index_to_word,
+               text_utils.spa_index_to_word,
+               text_utils.max_inp_seq,
+               text_utils.max_trg_seq,
+               enc_hidden_size=FLAGS.enc_hid_size,
+               dec_hidden_size=FLAGS.dec_hid_size,
+               n_layers=FLAGS.n_layers)
 
-    s2s.build_graph()
+s2s.build_graph()
 
-    s2s.train(FLAGS.model_name,
-              enc_sequence_inps,
-              dec_sequence_inps,
-              dec_sequence_outputs)
+s2s.train(FLAGS.model_name,
+          enc_sequence_inps,
+          dec_sequence_inps,
+          dec_sequence_outputs)
 
-    text_utils.print_sentence(enc_sequence_inps[0])
-    s2s.inference(enc_sequence_inps[0])
+text_utils.print_sentence(enc_sequence_inps[0])
+s2s.inference(enc_sequence_inps[0])
