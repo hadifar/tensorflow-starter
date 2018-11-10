@@ -43,20 +43,18 @@ class LinearRegression(tf.keras.Model):
         return output
 
 
-def loss_f(pred, labels):
+def loss_f(model, input, labels):
+    pred = model(input)
     return tf.losses.mean_squared_error(tf.expand_dims(labels, axis=1), pred)
 
 
 model = LinearRegression()
 optimizer = tf.train.GradientDescentOptimizer(1e-3)
 
-for e in range(10000):
+for e in range(5000):
     with tf.GradientTape() as tape:
-        pred_y = model(train_data)
-        loss = loss_f(pred_y, train_labels)
+        loss = loss_f(model, train_data, train_labels)
     grads = tape.gradient(loss, model.variables)
     optimizer.apply_gradients(grads_and_vars=zip(grads, model.variables))
 
-pred_y = model(test_data)
-eval = loss_f(pred_y, train_labels)
-print(eval.numpy())
+print(loss_f(model, test_data, test_labels).numpy())
