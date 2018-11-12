@@ -18,55 +18,69 @@ import tensorflow as tf
 
 tf.enable_eager_execution()
 
-file_name = '../lesson2/sentiment.csv'
-
+file_name = 'sentiment.csv'
 # read csv data
 csv_dataset = tf.data.experimental.CsvDataset(file_name,
                                               record_defaults=["", ""],
                                               header=True,
                                               select_cols=[1, 2])
+# change label-sentence to sentence-label
+csv_dataset = csv_dataset.map(lambda x, y: (y, x))
 # convert string labels into numeric value
-csv_dataset = csv_dataset.map(lambda x, y: (tf.cond(tf.equal(x, 'positive'), lambda: 1, lambda: 0), y))
+csv_dataset = csv_dataset.map(lambda x, y: (x, tf.cond(tf.equal(y, 'positive'), lambda: 1, lambda: 0)))
+csv_dataset = csv_dataset.map(lambda x, y: (x, tf.one_hot(y, 2)))
 
 # convert string words into IDs
-table = tf.contrib.lookup.index_table_from_file(vocabulary_file="vocab.txt")
-csv_dataset = csv_dataset.map(lambda x, y: (x, tf.string_split([y]).values))
-csv_dataset = csv_dataset.map(lambda x, y: (x, table.lookup(y)))
+table = tf.contrib.lookup.index_table_from_file(vocabulary_file="vocab.txt", num_oov_buckets=1)
+csv_dataset = csv_dataset.map(lambda x, y: (tf.string_split([x]).values, y))
+csv_dataset = csv_dataset.map(lambda x, y: (tf.cast(table.lookup(x), tf.int32), y))
+
+# add padding to batches
+csv_dataset = csv_dataset.shuffle(10).padded_batch(batch_size=3,
+                                                   padded_shapes=(tf.TensorShape([None, ]),
+                                                                  tf.TensorShape([None, ])))
+
+
+# for c in csv_dataset:
+#     print(c)
+
+# test_dataset = csv_dataset.take(5)
+# train_dataset = csv_dataset.skip(5)
 
 
 class MLP(tf.keras.Model):
-    def __init__(self, vocab_size=1000, embed_dim=128):
+    def __init__(self, vocab_size=100, hid_size=100):
         super(MLP, self).__init__()
-        self.embed = tf.keras.layers.Embedding(vocab_size, embed_dim)
-        self.pred = tf.keras.layers.Dense(1)
+        self.embed = tf.keras.layers.Embedding(vocab_size, 128)
+        self.dense1 = tf.keras.layers.Dense(units=hid_size, activation=tf.nn.relu)
+        self.global_pooling = tf.keras.layers.GlobalAveragePooling1D()
+        self.pred = tf.keras.layers.Dense(2)
 
     def __call__(self, inputs):
         emb = self.embed(inputs)
-        emb = tf.reduce_mean(emb, axis=0)
-        emb = tf.expand_dims(emb, axis=0)
-        outputs = self.pred(emb)
+        d1 = self.dense1(emb)
+        d1 = self.global_pooling(d1)
+        outputs = self.pred(d1)
         return outputs
 
 
 def loss_function(labels, preds):
-    labels = tf.reshape(labels, (1, 1))
-    preds = tf.round(preds)
-    return tf.losses.softmax_cross_entropy(labels, preds)
+    return tf.losses.sigmoid_cross_entropy(labels, preds)
 
 
-optimizer = tf.train.AdamOptimizer()
+optimizer = tf.train.AdamOptimizer(0.001)
 model = MLP()
 
-for epoch in range(1000):
-
-    for batch, (label, sentence) in enumerate(csv_dataset):
+for epoch in range(10000):
+    for batch, (sentence, label) in enumerate(csv_dataset):
+        # sentence = tf.one_hot(sentence, 100, axis=2)
         with tf.GradientTape() as tape:
             pred = model(sentence)
             loss = loss_function(label, pred)
         grads = tape.gradient(loss, model.variables)
         optimizer.apply_gradients(grads_and_vars=zip(grads, model.variables))
-        if batch % 10 == 0:
-            print('Epoch {}: loss: {:.4f}'.format(epoch + 1, loss))
+    if epoch % 24 == 0:
+        print('Epoch {}: loss: {:.4f}'.format(epoch + 1, loss))
 
 # import pandas as pd
 #
