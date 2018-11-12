@@ -54,7 +54,7 @@ model.add(keras.layers.Dense(64, activation=tf.nn.relu))
 model.add(keras.layers.Dense(64, activation=tf.nn.relu))
 model.add(keras.layers.Dense(1))
 
-optimizer = keras.optimizers.Nadam()
+optimizer = keras.optimizers.Nadam(clipvalue=5)
 early_stop = keras.callbacks.EarlyStopping(monitor='val_loss', patience=20)
 
 model.compile(optimizer, loss='mse', metrics=['mae'])

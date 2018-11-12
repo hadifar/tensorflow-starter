@@ -175,6 +175,7 @@ class S2SModel(object):
 text_utils = TextUtils()
 enc_sequence_inps, dec_sequence_inps, dec_sequence_outputs = text_utils.load_data(nb_examples=FLAGS.nb_examples)
 
+
 s2s = S2SModel(text_utils.eng_vocab_size,
                text_utils.spa_vocab_size,
                text_utils.eng_index_to_word,

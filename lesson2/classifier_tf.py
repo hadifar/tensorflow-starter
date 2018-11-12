@@ -1,19 +1,19 @@
-# # # -*- coding: utf-8 -*-
-# # #
-# # # Copyright 2018 Amir Hadifar. All Rights Reserved.
-# # #
-# # # Licensed under the Apache License, Version 2.0 (the "License");
-# # # you may not use this file except in compliance with the License.
-# # # You may obtain a copy of the License at
-# # #
-# # #     http://www.apache.org/licenses/LICENSE-2.0
-# # #
-# # # Unless required by applicable law or agreed to in writing, software
-# # # distributed under the License is distributed on an "AS IS" BASIS,
-# # # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# # # See the License for the specific language governing permissions and
-# # # limitations under the License.
-# # ==============================================================================
+# -*- coding: utf-8 -*-
+#
+# Copyright 2018 Amir Hadifar. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
 import tensorflow as tf
 
 tf.enable_eager_execution()
@@ -40,9 +40,6 @@ csv_dataset = csv_dataset.shuffle(10).padded_batch(batch_size=3,
                                                    padded_shapes=(tf.TensorShape([None, ]),
                                                                   tf.TensorShape([None, ])))
 
-
-# for c in csv_dataset:
-#     print(c)
 
 # test_dataset = csv_dataset.take(5)
 # train_dataset = csv_dataset.skip(5)
@@ -73,7 +70,6 @@ model = MLP()
 
 for epoch in range(10000):
     for batch, (sentence, label) in enumerate(csv_dataset):
-        # sentence = tf.one_hot(sentence, 100, axis=2)
         with tf.GradientTape() as tape:
             pred = model(sentence)
             loss = loss_function(label, pred)
@@ -81,15 +77,3 @@ for epoch in range(10000):
         optimizer.apply_gradients(grads_and_vars=zip(grads, model.variables))
     if epoch % 24 == 0:
         print('Epoch {}: loss: {:.4f}'.format(epoch + 1, loss))
-
-# import pandas as pd
-#
-# df = pd.read_csv('../lesson2/sentiment.csv', sep=',', names=['id', 'label', 'sentence'], skiprows=1)
-# df = df['sentence']
-# vocab = set()
-# for item in df.values.tolist():
-#     vocab.update(item.split())
-#
-# with open('vocab.txt', mode='w') as out_file:
-#     for item in vocab:
-#         out_file.write(item + '\n')

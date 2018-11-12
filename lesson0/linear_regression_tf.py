@@ -45,7 +45,9 @@ class LinearRegression(tf.keras.Model):
 
 
 model = LinearRegression()
+
 optimizer = tf.train.GradientDescentOptimizer(1e-3)
+
 for _ in range(10000):
     with tf.GradientTape() as tape:
         y_pred = model(X)
