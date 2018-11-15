@@ -5,7 +5,8 @@ Sample code for my blog posts --> [http://hadifar.net]
 
 
 # Tutorials
-
+- [Lesson 0](https://github.com/hadifar/tensorflow-starter/tree/master/lesson0): Basic concepts in Neural Networks including: Backpropagation and Optimization [here](http://hadifar.net/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%AA%D9%86%D8%B3%D9%88%D8%B1%D9%81%D9%84%D9%88/)
+- [Lesson 2](https://github.com/hadifar/tensorflow-starter/tree/master/lesson2): Basic Neural networks implementation with eager.execution and Keras API [here](https://github.com/hadifar/tensorflow-starter/tree/master/lesson2)
 - [Lesson 3](https://github.com/hadifar/tensorflow-starter/tree/master/lesson3): Introduction to RNN (SimpleRnn and LSTM) [here](http://hadifar.net/1396/%D8%B4%D8%A8%DA%A9%D9%87%E2%80%8C%D9%87%D8%A7%DB%8C-%D8%B9%D8%B5%D8%A8%DB%8C-%D8%A8%D8%A7%D8%B2%DA%AF%D8%B4%D8%AA%DB%8C-%D9%82%D8%B3%D9%85%D8%AA-%D8%A7%D9%88%D9%84/)
 - [Lesson 5](https://github.com/hadifar/tensorflow-starter/tree/master/lesson5): Transfer learning [here](http://hadifar.net/1397/%D8%A7%D9%86%D8%AA%D9%82%D8%A7%D9%84-%DB%8C%D8%A7%D8%AF%DA%AF%DB%8C%D8%B1%DB%8C-transfer-learning/)
 - [Lesson 6](https://github.com/hadifar/tensorflow-starter/tree/master/lesson6): OOP in Tensorflow: Case study Word2vec [here](http://hadifar.net/1397/%DA%86%DA%AF%D9%88%D9%86%D9%87-%D8%AF%D8%B1-%D8%AA%D9%86%D8%B3%D9%88%D8%B1%D9%81%D9%84%D9%88-%D8%B4%DB%8C-%DA%AF%D8%B1%D8%A7-%DA%A9%D8%AF-%D8%A8%D8%B2%D9%86%DB%8C%D9%85%D8%9F/)
