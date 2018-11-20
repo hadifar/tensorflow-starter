@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+
 import random
 from collections import deque
 
@@ -22,22 +23,23 @@ import numpy as np
 import tensorflow as tf
 
 tf.enable_eager_execution()
-num_episodes = 500
+
+num_episodes = 3000
+max_len_episode = 2000
 num_exploration_episodes = 100
-max_len_episode = 1000
 batch_size = 32
 learning_rate = 1e-3
-gamma = 1.
+gamma = .99
 initial_epsilon = 1.
 final_epsilon = 0.01
 
 
 class QNetwork(tf.keras.Model):
-    def __init__(self):
+    def __init__(self, n_action_space=3):
         super().__init__()
-        self.dense1 = tf.keras.layers.Dense(units=24, activation=tf.nn.relu)
-        self.dense2 = tf.keras.layers.Dense(units=24, activation=tf.nn.relu)
-        self.dense3 = tf.keras.layers.Dense(units=2)
+        self.dense1 = tf.keras.layers.Dense(units=100, activation=tf.nn.relu)
+        self.dense2 = tf.keras.layers.Dense(units=100, activation=tf.nn.relu)
+        self.dense3 = tf.keras.layers.Dense(units=n_action_space)
 
     def call(self, inputs):
         x = self.dense1(inputs)
@@ -50,50 +52,52 @@ class QNetwork(tf.keras.Model):
         return tf.argmax(q_values, axis=-1)
 
 
-env = gym.make('CartPole-v1')
-model = QNetwork()
+env = gym.make('MountainCar-v0')
+model = QNetwork(n_action_space=env.action_space.n)
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-state = env.reset()
-replay_buffer = deque(maxlen=10000)
+replay_buffer = deque(maxlen=100000)
 epsilon = initial_epsilon
 
 for episode_id in range(num_episodes):
     state = env.reset()
-    epsilon = max(initial_epsilon * (num_exploration_episodes - episode_id) / num_exploration_episodes,
-                  final_epsilon)
+    epsilon = max(initial_epsilon * (num_exploration_episodes - episode_id) / num_exploration_episodes, final_epsilon)
+
     for t in range(max_len_episode):
+
         env.render()
+
         if random.random() < epsilon:
             action = env.action_space.sample()
         else:
-            action = model.predict(tf.constant(np.expand_dims(state, axis=0), dtype=tf.float32)).numpy()
-            action = action[0]
+            action = model.predict(tf.constant(np.expand_dims(state, axis=0), dtype=tf.float32)).numpy()[0]
 
         next_state, reward, done, info = env.step(action)
 
         reward = -10. if done else reward
-
-        replay_buffer.append((state, action, reward, next_state, done))
-
+        replay_buffer.append((state, action, reward, next_state, 1 if done else 0))
         state = next_state
 
         if done:
-            print("episode %d, epsilon %f, score %d" % (episode_id, epsilon, t))
             break
 
         if len(replay_buffer) >= batch_size:
             batch_state, batch_action, batch_reward, batch_next_state, batch_done = \
-                [np.array(a, dtype=np.float32) for a in zip(*random.sample(replay_buffer, batch_size))]
+                zip(*random.sample(replay_buffer, batch_size))
+
+            batch_state, batch_reward, batch_next_state, batch_done = \
+                [np.array(a, dtype=np.float32) for a in [batch_state, batch_reward, batch_next_state, batch_done]]
+
+            batch_action = np.array(batch_action, dtype=np.int32)
+
             q_value = model(tf.constant(batch_next_state, dtype=tf.float32))
+
             y = batch_reward + (gamma * tf.reduce_max(q_value, axis=1)) * (1 - batch_done)
+            batch_action = tf.cast(batch_action, tf.int32)
 
             with tf.GradientTape() as tape:
-                loss = tf.losses.mean_squared_error(labels=y,
-                                                    predictions=tf.reduce_sum(
-                                                        model(tf.constant(batch_state)) * tf.one_hot(batch_action,
-                                                                                                     depth=2),
-                                                        axis=1))
+                pred = tf.reduce_sum(model(tf.constant(batch_state)) *
+                                     tf.one_hot(batch_action, depth=3), axis=1)
+
+                loss = tf.losses.mean_squared_error(labels=y, predictions=pred)
             grads = tape.gradient(loss, model.variables)
             optimizer.apply_gradients(grads_and_vars=zip(grads, model.variables))
-
-env.env.close()
