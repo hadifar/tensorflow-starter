@@ -7,3 +7,5 @@ tensorboard
 tensorflow-hub
 nltk
 gensim
+gym
+tensor2tensor
