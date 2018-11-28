@@ -18,6 +18,7 @@ import os
 
 import tensorflow as tf
 from tensor2tensor import problems
+from tensor2tensor.models.transformer import TransformerEncoder
 from tensor2tensor.utils import metrics
 from tensor2tensor.utils import t2t_model
 from tensor2tensor.utils import trainer_lib
@@ -44,10 +45,10 @@ gs_ckpt_dir = "../lesson16/t2t/tensor2tensor-checkpoints/"
 # Create your own model
 
 # Fetch the MNIST problem
-mnist_problem = problems.problem("image_mnist")
+lm_problem = problems.problem("languagemodel_ptb10k")
 # The generate_data method of a problem will download data and process it into
 # a standard format ready for training and evaluation.
-mnist_problem.generate_data(data_dir, tmp_dir)
+lm_problem.generate_data(data_dir, tmp_dir)
 
 
 class MySimpleModel(t2t_model.T2TModel):
@@ -63,8 +64,8 @@ class MySimpleModel(t2t_model.T2TModel):
                                 kernel_size=(3, 3))
 
 
-hparams = trainer_lib.create_hparams("basic_1", data_dir=data_dir, problem_name="image_mnist")
-hparams.hidden_size = 64
+hparams = trainer_lib.create_hparams("basic_1", data_dir=data_dir, problem_name="languagemodel_ptb10k")
+# hparams.hidden_size = 64
 model = MySimpleModel(hparams, Modes.TRAIN)
 
 
@@ -80,15 +81,15 @@ def loss_fn(features):
 
 # Setup the training data
 BATCH_SIZE = 128
-mnist_train_dataset = mnist_problem.dataset(Modes.TRAIN, data_dir)
-mnist_train_dataset = mnist_train_dataset.repeat(None).batch(BATCH_SIZE)
+lm_train_dataset = lm_problem.dataset(Modes.TRAIN, data_dir)
+lm_train_dataset = lm_train_dataset.repeat(None).batch(BATCH_SIZE)
 
 optimizer = tf.train.AdamOptimizer()
 
 # Train
 NUM_STEPS = 500
 
-for count, example in enumerate(tfe.Iterator(mnist_train_dataset)):
+for count, example in enumerate(tfe.Iterator(lm_train_dataset)):
     example["targets"] = tf.reshape(example["targets"], [BATCH_SIZE, 1, 1, 1])  # Make it 4D.
     loss, gv = loss_fn(example)
     optimizer.apply_gradients(gv)
@@ -99,7 +100,7 @@ for count, example in enumerate(tfe.Iterator(mnist_train_dataset)):
         break
 
 model.set_mode(Modes.EVAL)
-mnist_eval_dataset = mnist_problem.dataset(Modes.EVAL, data_dir)
+mnist_eval_dataset = lm_problem.dataset(Modes.EVAL, data_dir)
 
 # Create eval metric accumulators for accuracy (ACC) and accuracy in
 # top 5 (ACC_TOP5)
