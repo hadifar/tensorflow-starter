@@ -19,12 +19,12 @@ from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import GRU, CuDNNGRU
-from tensorflow.keras.layers import Input, Lambda
-from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.optimizers import Adam
+from tensorflow.python.keras import backend as K
+from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.layers import GRU, CuDNNGRU
+from tensorflow.python.keras.layers import Input, Lambda
+from tensorflow.python.keras.models import Model, load_model
+from tensorflow.python.keras.optimizers import Adam
 
 from lesson7.utils import TextUtils
 
