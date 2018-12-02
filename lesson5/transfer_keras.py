@@ -15,7 +15,7 @@
 # limitations under the License.
 # ==============================================================================
 from tensorflow import keras
-from tensorflow.keras.applications import VGG19
+from tensorflow.python.keras.applications import VGG19
 from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
 
 if __name__ == '__main__':
