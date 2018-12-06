@@ -59,25 +59,36 @@ bias_rnn = tf.get_variable(name='brnn', initializer=tf.zeros([rnn_size]))
 def rnn_step(prev_hidden_state, x):
     return tf.tanh(tf.matmul(x, Wx) + tf.matmul(prev_hidden_state, Wh) + bias_rnn)
 
-
+# our unroll function
+# notice that our inputs should be transpose
 hidden_states = tf.scan(fn=rnn_step,
                         elems=tf.transpose(embed, perm=[1, 0, 2]),
                         initializer=tf.zeros([batch_size, rnn_size]))
 
+# covert to previous shape
 outputs = tf.transpose(hidden_states, perm=[1, 0, 2])
+
+# extract last hidden
 last_rnn_output = outputs[:, -1, :]
 
-dense1 = tf.layers.dense(last_rnn_output, 16, activation='relu')
-logit = tf.layers.dense(dense1, 2)
+# dense layers variables
+Wd1 = tf.get_variable(name='dense1', shape=(rnn_size, 16))
+Wd2 = tf.get_variable(name='dense2', shape=(rnn_size, 2))
+
+dense1 = tf.nn.relu(tf.matmul(last_rnn_output, Wd1))
+logit = tf.matmul(last_rnn_output, Wd2)
 pred = tf.nn.softmax(logit)
 
+# calculate accuracy
 correct_pred = tf.equal(tf.argmax(pred, 1), y)
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
+# define optimizer, cost, and training step
 cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logit))
 optimizer = tf.train.AdamOptimizer()
 train_step = optimizer.minimize(cost, global_step=global_step)
 
+# training and testing loop
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     sess.run(train_init_op)
