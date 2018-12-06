@@ -18,11 +18,8 @@ import tensorflow as tf
 
 vocabulary_size = 10000
 embedding_size = 64
-seq_len = 256
 rnn_size = 64
 batch_size = 512
-
-nb_epoch = 300
 
 # download dataset
 (train_data, train_labels), (test_data, test_labels) = tf.keras.datasets.imdb.load_data(num_words=vocabulary_size)
@@ -31,8 +28,9 @@ nb_epoch = 300
 train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data, maxlen=256)
 test_data = tf.keras.preprocessing.sequence.pad_sequences(test_data, maxlen=256)
 
-# convert our np.data to tf.data.Dataset
-training_dataset = tf.data.Dataset.from_tensor_slices((train_data, train_labels)).repeat(5).shuffle(1024).batch(batch_size)
+# convert our np.data to tf.data.Dataset and create two iterators for test & train
+training_dataset = tf.data.Dataset.from_tensor_slices((train_data, train_labels)).repeat(5).shuffle(1024).batch(
+    batch_size)
 test_dataset = tf.data.Dataset.from_tensor_slices((test_data, test_labels)).repeat(1).batch(batch_size)
 
 iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
@@ -44,21 +42,31 @@ test_init_op = iterator.make_initializer(test_dataset)
 # Input data
 x, y = iterator.get_next()
 
+# it is a counter
 global_step = tf.Variable(0, trainable=False)
 
-# Model
+# embedding matrix
 embeddings_matrix = tf.get_variable("embedding", [vocabulary_size, embedding_size])
-embed = tf.nn.embedding_lookup(embeddings_matrix, x)
+embed = tf.nn.embedding_lookup(embeddings_matrix, x)  # batch x seq x embed_size
 
-# define RNN layer
-# rnn_cell = tf.contrib.rnn.BasicRNNCell(rnn_size) # will remove in tensorflow 2.0
-rnn_cell = tf.keras.layers.SimpleRNNCell(rnn_size)
-outputs, states = tf.nn.dynamic_rnn(rnn_cell, embed, dtype=tf.float32)
-# RNN outputs: [batch_size * seq_len * hidden_size]
-# split and extract only last output
+# our RNN variables
+Wx = tf.get_variable(name='Wx', shape=[embedding_size, rnn_size])
+Wh = tf.get_variable(name='Wh', shape=[rnn_size, rnn_size])
+bias_rnn = tf.get_variable(name='brnn', initializer=tf.zeros([rnn_size]))
+
+
+# single step in RNN
+def rnn_step(prev_hidden_state, x):
+    return tf.tanh(tf.matmul(x, Wx) + tf.matmul(prev_hidden_state, Wh) + bias_rnn)
+
+
+hidden_states = tf.scan(fn=rnn_step,
+                        elems=tf.transpose(embed, perm=[1, 0, 2]),
+                        initializer=tf.zeros([batch_size, rnn_size]))
+
+outputs = tf.transpose(hidden_states, perm=[1, 0, 2])
 last_rnn_output = outputs[:, -1, :]
 
-# Dense layers
 dense1 = tf.layers.dense(last_rnn_output, 16, activation='relu')
 logit = tf.layers.dense(dense1, 2)
 pred = tf.nn.softmax(logit)
