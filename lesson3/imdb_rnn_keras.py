@@ -38,20 +38,20 @@ model.add(keras.layers.Embedding(10000, 16))
 model.add(keras.layers.SimpleRNN(50))
 # model.add(keras.layers.LSTM(50))
 model.add(keras.layers.Dense(16, activation=tf.nn.relu))
-model.add(keras.layers.Dense(1, activation=tf.nn.sigmoid))
+model.add(keras.layers.Dense(2, activation=tf.nn.sigmoid))
 
-model.compile(optimizer=tf.train.AdamOptimizer(),
-              loss='binary_crossentropy',
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 
 print('train model')
 model.fit(x_train,
           y_train,
-          epochs=15,
+          epochs=5,
           batch_size=512,
           validation_data=(x_val, y_val),
           verbose=1)
 
 print('evaluation')
 evaluation = model.evaluate(x_test, y_test, batch_size=512)
-print('Accuracy:', evaluation[1], 'Loss:', evaluation[0])
+print('Loss:', evaluation[0], 'Accuracy:', evaluation[1] )

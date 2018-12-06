@@ -16,12 +16,6 @@
 # ==============================================================================
 import tensorflow as tf
 
-from helper.data_helper import DataHelper
-
-tf.reset_default_graph()
-
-imdb = tf.keras.datasets.imdb
-
 vocabulary_size = 10000
 embedding_size = 64
 seq_len = 256
@@ -31,74 +25,74 @@ batch_size = 512
 
 nb_epoch = 300
 
-(train_data, train_labels), (test_data, test_labels) = imdb.load_data(num_words=vocabulary_size)
+# download dataset
+(train_data, train_labels), (test_data, test_labels) = tf.keras.datasets.imdb.load_data(num_words=vocabulary_size)
 
+# add zero padding to our data
 train_data = tf.keras.preprocessing.sequence.pad_sequences(train_data, maxlen=256)
 test_data = tf.keras.preprocessing.sequence.pad_sequences(test_data, maxlen=256)
 
-train_labels = tf.keras.utils.to_categorical(train_labels)
-test_labels = tf.keras.utils.to_categorical(test_labels)
+# convert our np.data to tf.data.Dataset
+training_dataset = tf.data.Dataset.from_tensor_slices((train_data, train_labels)).repeat(5).shuffle(1024).batch(batch_size)
+test_dataset = tf.data.Dataset.from_tensor_slices((test_data, test_labels)).repeat(1).batch(batch_size)
 
-data_helper = DataHelper(train_data, train_labels)
+iterator = tf.data.Iterator.from_structure(training_dataset.output_types,
+                                           training_dataset.output_shapes)
+
+train_init_op = iterator.make_initializer(training_dataset)
+test_init_op = iterator.make_initializer(test_dataset)
 
 # Input data
-x = tf.placeholder(tf.int32, shape=[None, seq_len])
-y = tf.placeholder(tf.int32, shape=[None, 2])
+x, y = iterator.get_next()
+
 global_step = tf.Variable(0, trainable=False)
 
 # Model
-embeddings = tf.get_variable("embedding", [vocabulary_size, embedding_size])
-inputs = tf.nn.embedding_lookup(embeddings, x)
+embeddings_matrix = tf.get_variable("embedding", [vocabulary_size, embedding_size])
+embed = tf.nn.embedding_lookup(embeddings_matrix, x)
 
 # define RNN layer
-rnn_cell = tf.contrib.rnn.BasicRNNCell(rnn_size)
-initial_state = rnn_cell.zero_state(batch_size, dtype=tf.float32)
-outputs, states = tf.nn.dynamic_rnn(rnn_cell, inputs, initial_state=initial_state)
+# rnn_cell = tf.contrib.rnn.BasicRNNCell(rnn_size) # will remove in tensorflow 2.0
+rnn_cell = tf.keras.layers.SimpleRNNCell(rnn_size)
+outputs, states = tf.nn.dynamic_rnn(rnn_cell, embed, dtype=tf.float32)
 # RNN outputs: [batch_size * seq_len * hidden_size]
 # split and extract only last output
-output = tf.reshape(tf.split(outputs, seq_len, axis=1, name='split')[-1], [batch_size, -1])
+last_rnn_output = outputs[:, -1, :]
 
-# Dense layer
-dense1 = tf.layers.dense(output, 16, activation='relu')
-logit = tf.layers.dense(output, 2)
+# Dense layers
+dense1 = tf.layers.dense(last_rnn_output, 16, activation='relu')
+logit = tf.layers.dense(last_rnn_output, 2)
 pred = tf.nn.softmax(logit)
 
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+correct_pred = tf.equal(tf.argmax(pred, 1), y)
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y, logits=logit))
+cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logit))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 train_step = optimizer.minimize(cost, global_step=global_step)
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
+    sess.run(train_init_op)
 
     while True:
-
-        batch_x, batch_y = data_helper.next_batch(batch_size)
-
-        _, step = sess.run([train_step, global_step], feed_dict={x: batch_x, y: batch_y})
-
-        current_step = tf.train.global_step(sess, global_step)
-
-        if step % 10 == 0:
-            # Calculate batch accuracy
-            acc = sess.run(accuracy, feed_dict={x: batch_x, y: batch_y})
-            # Calculate batch loss
-            loss = sess.run(cost, feed_dict={x: batch_x, y: batch_y})
-            print("Iter " + str(current_step) + ", Mini batch Loss= " +
-                  "{:.6f}".format(loss) + ", Training Accuracy= " +
-                  "{:.5f}".format(acc))
-
-        if current_step > nb_epoch:
+        try:
+            _, step, c, acc = sess.run([train_step, global_step, cost, accuracy])
+            if step % 50 == 0:
+                print("Iter " + str(step) +
+                      ", batch loss {:.6f}".format(c) +
+                      ", batch Accuracy= {:.5f}".format(acc))
+        except tf.errors.OutOfRangeError:
+            print('training is finished...')
             break
 
-    test_helper = DataHelper(test_data, test_labels)
     step = 0
     acc = 0
-    while test_helper.epoch_completed == 0:
-        step = step + 1
-        x_batch, y_batch = test_helper.next_batch(batch_size)
-        cur_acc = sess.run(accuracy, feed_dict={x: x_batch, y: y_batch})
-        acc = acc + cur_acc
+    sess.run(test_init_op)
+    while True:
+        try:
+            step = step + 1
+            acc = acc + sess.run(accuracy)
+        except tf.errors.OutOfRangeError:
+            break
     print('final accuracy', acc / step)
