@@ -50,7 +50,7 @@ inputs = tf.nn.embedding_lookup(embeddings, x)
 conv1 = tf.layers.conv1d(inputs, 64, 16, strides=1, padding='same', activation=tf.nn.relu)
 conv1 = tf.layers.dropout(conv1, rate=dropout)
 
-conv2 = tf.layers.conv1d(conv1, 32, 32, strides=1, padding='same', activation=tf.nn.relu)
+conv2 = tf.layers.conv1d(conv1, 32, 32, strides=2, padding='same', activation=tf.nn.relu)
 conv2 = tf.layers.dropout(conv2, rate=dropout)
 
 conv3 = tf.layers.conv1d(conv2, 16, 48, strides=1, padding='same', activation=tf.nn.relu)
