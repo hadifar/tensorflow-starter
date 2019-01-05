@@ -38,8 +38,12 @@ classifier = tf.estimator.DNNClassifier(
     # The directory which model saved
     model_dir='./tmp'
 )
-
 # Train the Model.
+#
+#
+#
+#
+#
 classifier.train(input_fn=iris_data.train_input_fn, steps=1000)
 
 # Evaluate the model.
