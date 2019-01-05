@@ -40,9 +40,9 @@ classifier = tf.estimator.DNNClassifier(
 )
 
 # Train the Model.
-classifier.train(input_fn=lambda: iris_data.train_input_fn(), steps=1000)
+classifier.train(input_fn=iris_data.train_input_fn, steps=1000)
 
 # Evaluate the model.
-eval_result = classifier.evaluate(input_fn=lambda: iris_data.eval_input_fn())
+eval_result = classifier.evaluate(input_fn=iris_data.eval_input_fn)
 
 print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
